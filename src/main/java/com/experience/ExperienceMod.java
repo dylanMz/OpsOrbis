@@ -1,0 +1,64 @@
+package com.experience;
+
+import com.hypixel.hytale.server.core.plugin.JavaPlugin;
+import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.experience.game.GameManager;
+import com.experience.commands.GameCommand;
+import com.experience.config.ConfigManager;
+import java.util.logging.Level;
+
+/**
+ * Classe principale du mod ExperienceMod.
+ */
+public class ExperienceMod extends JavaPlugin {
+
+    private static ExperienceMod instance;
+    private GameManager gameManager;
+    private ConfigManager configManager;
+
+    public ExperienceMod(JavaPluginInit init) {
+        super(init);
+        instance = this;
+    }
+
+    public static ExperienceMod get() {
+        return instance;
+    }
+
+    @Override
+    protected void setup() {
+        getLogger().at(Level.INFO).log("Setup du mod ExperienceMod (Mini-Jeu 5v5)...");
+        
+        // 1. Initialisation de la configuration
+        this.configManager = new ConfigManager();
+
+        // 2. Initialisation du gestionnaire de jeu
+        this.gameManager = new GameManager(this);
+
+        // 3. Enregistrement des commandes
+        getCommandRegistry().registerCommand(new GameCommand(gameManager));
+        
+        getLogger().at(Level.INFO).log("Initialisation des systèmes et commandes terminée.");
+    }
+
+    @Override
+    protected void start() {
+        getLogger().at(Level.INFO).log("Le mod ExperienceMod (Mini-Jeu 5v5) a bien été chargé !");
+    }
+
+    @Override
+    protected void shutdown() {
+        if (configManager != null) {
+            configManager.save();
+        }
+        getLogger().at(Level.INFO).log("Le mod ExperienceMod est en cours de désactivation...");
+    }
+
+    public GameManager getGameManager() {
+        return gameManager;
+    }
+
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+}

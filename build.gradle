@@ -1,0 +1,30 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.experience'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = "hytale"
+        url = uri("https://maven.hytale.com/release")
+    }
+    maven { url = uri("https://jitpack.io") }
+    maven { url "https://www.cursemaven.com" }
+}
+
+dependencies {
+    implementation("com.hypixel.hytale:Server:+")
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}

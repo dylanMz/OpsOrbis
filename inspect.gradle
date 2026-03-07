@@ -1,0 +1,18 @@
+task inspectMessage {
+    doLast {
+        def classLoader = org.gradle.internal.classloader.DefaultClassLoader.getSystemClassLoader()
+        // We need the compile classpath. Let's just find the jar
+        def hytaleDir = file(System.getProperty("user.home") + "/.gradle/caches/modules-2/files-2.1/com.hypixel.hytale/")
+        def jars = fileTree(dir: hytaleDir, include: '**/*.jar')
+        def urls = jars.files.collect { it.toURI().toURL() }
+        def cl = new java.net.URLClassLoader(urls as java.net.URL[])
+        try {
+            def clazz = cl.loadClass("com.hypixel.hytale.server.core.Message")
+            println("Class: " + clazz.getName())
+            println("Methods:")
+            clazz.getDeclaredMethods().each { println it }
+        } catch (Exception e) {
+            e.printStackTrace()
+        }
+    }
+}

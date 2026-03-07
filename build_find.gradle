@@ -1,0 +1,25 @@
+task findRedInHytale {
+  doLast {
+    def jars = fileTree(dir: System.getProperty("user.home") + "/.gradle/caches/modules-2/files-2.1/com.hypixel.hytale/", include: "**/*.jar")
+    def cl = new java.net.URLClassLoader(jars.files.collect { it.toURI().toURL() } as java.net.URL[])
+    jars.each { jarFile ->
+      try {
+        def zip = new java.util.zip.ZipFile(jarFile)
+        zip.entries().each { entry ->
+          if (entry.name.endsWith(".class") && entry.name.startsWith("com/hypixel/hytale")) {
+            def className = entry.name.replace('/', '.').replace('.class', '')
+            try {
+              def clazz = cl.loadClass(className)
+              clazz.getDeclaredFields().each { field ->
+                if (field.name == "RED" && java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+                  println "Found RED in: " + className + " (Type: " + field.type.name + ")"
+                }
+              }
+            } catch (Throwable t) {}
+          }
+        }
+        zip.close()
+      } catch (Exception e) {}
+    }
+  }
+}

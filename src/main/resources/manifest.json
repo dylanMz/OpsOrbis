@@ -1,0 +1,16 @@
+{
+  "Name": "Experience Mod",
+  "ID": "experiencemod",
+  "Version": "1.0.0",
+  "ServerVersion": "2026.02.19-1a311a592",
+  "Group": "com.experience",
+  "Main": "com.experience.ExperienceMod",
+  "Description": "Mod Mini-Jeu 5v5 Experience",
+  "Authors": [
+    {
+      "Name": "Dylan"
+    }
+  ],
+  "Dependencies": {},
+  "IncludesAssetPack": false
+}

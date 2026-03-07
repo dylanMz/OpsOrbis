@@ -1,0 +1,14 @@
+task inspectColorFinal {
+  doLast {
+    def jars = fileTree(dir: System.getProperty("user.home") + "/.gradle/caches/modules-2/files-2.1/com.hypixel.hytale/", include: "**/*.jar")
+    def cl = new java.net.URLClassLoader(jars.files.collect { it.toURI().toURL() } as java.net.URL[])
+    ["com.hypixel.hytale.protocol.Color", "com.hypixel.hytale.server.worldgen.loader.util.ColorUtil", "com.hypixel.hytale.server.core.asset.util.ColorParseUtil"].each { className ->
+      println "--- $className ---"
+      try {
+        def clazz = cl.loadClass(className)
+        clazz.getDeclaredFields().each { println "Field: $it.name (Type: $it.type.name)" }
+        clazz.getDeclaredMethods().each { println "Method: $it" }
+      } catch (Exception e) { println "Failed to load $className" }
+    }
+  }
+}
