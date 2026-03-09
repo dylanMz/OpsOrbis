@@ -15,6 +15,10 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.system.tick.ArchetypeTickingSystem;
 
+/**
+ * Système ECS de type ArchetypeTickingSystem qui vérifie périodiquement 
+ * la proximité entre les joueurs et les points de spawn des reliques.
+ */
 public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
 
     private final Query<EntityStore> query;
@@ -37,6 +41,7 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
 
     @Override
     public void tick(float delta, ArchetypeChunk<EntityStore> chunk, Store<EntityStore> store, CommandBuffer<EntityStore> buffer) {
+        // On ne vérifie que si la partie est en cours
         if (gameManager == null || gameManager.getEtatActuel() != GameManager.GameState.EN_COURS || gameManager.getRelicManager() == null) return;
         GameConfig config = ExperienceMod.get().getConfigManager().getConfig();
         RelicManager relicManager = gameManager.getRelicManager();
@@ -47,8 +52,9 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
             if (joueur == null || transform == null) continue;
 
             Vector3d pos = transform.getPosition();
-            double pRange = 1.5;
+            double pRange = 1.5; // Distance de ramassage
 
+            // Vérification pour chaque relique (disponibilité, porteur actuel, distance)
             if (config.getBlueRelic1() != null && relicManager.estReliqueDisponible(true, 1) && relicManager.getCarrierBlueRelic1() == null && pos.distanceTo(config.getBlueRelic1()) <= pRange) {
                 relicManager.ramasserRelique(joueur, true, 1, buffer);
             }

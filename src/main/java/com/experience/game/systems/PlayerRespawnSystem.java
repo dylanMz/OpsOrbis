@@ -13,7 +13,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 
 /**
- * Système ECS gérant le respawn du joueur.
+ * Système ECS gérant la réapparition (respawn) du joueur.
+ * Se déclenche lorsque le DeathComponent est retiré de l'entité.
  */
 public class PlayerRespawnSystem extends RespawnSystems.OnRespawnSystem {
 
@@ -37,17 +38,20 @@ public class PlayerRespawnSystem extends RespawnSystems.OnRespawnSystem {
 
     @Override
     public void onComponentRemoved(Ref<EntityStore> ref, DeathComponent removedComponent, Store<EntityStore> store, CommandBuffer<EntityStore> buffer) {
+        // Le joueur vient de cliquer sur "Respawn"
         Player joueur = store.getComponent(ref, Player.getComponentType());
+        
         if (joueur != null && gameManager.getEtatActuel() == GameManager.GameState.EN_COURS) {
-            // Téléportation au spawn de l'équipe après le respawn (quand DeathComponent est retiré)
+            
+            // 1. Téléportation immédiate au point de spawn de son équipe
             if (gameManager.getTeamManager() != null) {
                 gameManager.getTeamManager().teleporterAuSpawn(joueur);
             }
             
-            // Sécurité : Retirer la relique si elle a persisté malgré la mort
+            // 2. Sécurité : On s'assure qu'il n'a plus de relique dans son inventaire
             joueur.getInventory().getCombinedEverything().removeItemStack(new ItemStack("Bench_Memories", 1));
 
-            // On peut aussi lui redonner son kit ici
+            // 3. Redonner l'équipement de combat (Kit)
             if (gameManager.getKitManager() != null) {
                 gameManager.getKitManager().donnerEquipement(joueur);
             }

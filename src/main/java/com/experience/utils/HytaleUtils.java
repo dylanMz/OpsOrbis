@@ -26,9 +26,13 @@ public class HytaleUtils {
      */
     public static void diffuserMessage(World monde, Message message) {
         if (monde == null) return;
+        // Utilisation de monde.execute pour garantir la sécurité des threads Hytale
         monde.execute(() -> {
             Store<EntityStore> store = monde.getEntityStore().getStore();
+            // Création d'un archetype pour cibler uniquement les joueurs
             Query<EntityStore> playerQuery = Archetype.of(Player.getComponentType());
+            
+            // Parcours de chaque "chunk" d'entités chargés
             store.forEachChunk(playerQuery, (chunk, buffer) -> {
                 for (int i = 0; i < chunk.size(); i++) {
                     Player p = chunk.getComponent(i, Player.getComponentType());
@@ -50,10 +54,12 @@ public class HytaleUtils {
         if (joueur == null || position == null) return;
         World monde = joueur.getWorld();
         if (monde != null) {
+            // Ajout du composant Teleport via le thread de simulation
             monde.execute(() -> {
                 monde.getEntityStore().getStore().addComponent(
                     joueur.getReference(), 
                     Teleport.getComponentType(), 
+                    // Création de l'objet Teleport (destination + rotation nulle)
                     Teleport.createForPlayer(position, new Vector3f(0, 0, 0))
                 );
             });

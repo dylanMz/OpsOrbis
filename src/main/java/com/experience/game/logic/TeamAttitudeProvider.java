@@ -10,6 +10,11 @@ import com.hypixel.hytale.server.npc.blackboard.view.attitude.IAttitudeProvider;
 import com.hypixel.hytale.logger.HytaleLogger;
 import java.util.logging.Level;
 
+/**
+ * Provider d'Attitude dynamique pour les PNJ.
+ * Permet de définir si un joueur est allié (FRIENDLY) ou ennemi (HOSTILE)
+ * en fonction de son équipe définie dans TeamManager.
+ */
 public class TeamAttitudeProvider implements IAttitudeProvider {
 
     private final TeamManager teamManager;
@@ -21,27 +26,29 @@ public class TeamAttitudeProvider implements IAttitudeProvider {
 
     @Override
     public Attitude getAttitude(Ref<EntityStore> npcRef, Role role, Ref<EntityStore> targetRef, ComponentAccessor<EntityStore> accessor) {
-        // Déterminer l'équipe du PNJ qui pose la question
+        // 1. Déterminer l'équipe du PNJ qui effectue l'interrogation (l'observateur)
         boolean isBlue = npcManager.estPnjBleu(npcRef);
         boolean isRed = npcManager.estPnjRouge(npcRef);
         
+        // Si c'est un PNJ inconnu, on ne gère pas son attitude ici
         if (!isBlue && !isRed) return null;
         
         String maTeam = isBlue ? "Bleue" : "Rouge";
 
+        // 2. Vérifier si la cible de l'attention du PNJ est un joueur
         if (targetRef != null && accessor != null) {
             Player targetPlayerEntity = accessor.getComponent(targetRef, Player.getComponentType());
             if (targetPlayerEntity != null) {
-                // Si le joueur est de la même équipe, on devient "AMICAL"
+                // Si le joueur est de la même équipe -> On est AMIS
                 if (teamManager.estDansEquipe(targetPlayerEntity, maTeam)) {
                     return Attitude.FRIENDLY;
                 } else {
-                    // Joueur ennemi - On est hostile seulement si on est dans la zone autorisée
+                    // Joueur d'une équipe adverse -> On est HOSTILES
                     return Attitude.HOSTILE;
                 }
             }
         }
         
-        return null;
+        return null; // Attitude par défaut du moteur Hytale
     }
 }

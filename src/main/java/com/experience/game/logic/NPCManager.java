@@ -36,8 +36,13 @@ public class NPCManager {
     private Vector3d spawnBleu;
     private Vector3d spawnRouge;
 
+    // Liste des PNJ en cours de retour au bercail (leash break)
     private final Set<Ref<EntityStore>> returningNPCs = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    
+    // Points de vie maximum des PNJ défenseurs
     public static final float PNJ_MAX_HP = 500.0f;
+    
+    // Rotation par défaut lors de l'apparition
     private static final Vector3f ROTATION_DEFAUT = new Vector3f(0, 0, 0);
 
     public boolean isReturningHome(Ref<EntityStore> ref) {
@@ -58,7 +63,8 @@ public class NPCManager {
     }
 
     /**
-     * Fait apparaître les PNJ des deux équipes en utilisant les spawns configurés.
+     * Fait apparaître les PNJ Skelettes (Archers Brûlés) pour les deux équipes.
+     * Les positions sont récupérées depuis la configuration du jeu.
      */
     public void faireApparaitrePNJ() {
         if (monde == null) return;
@@ -66,6 +72,7 @@ public class NPCManager {
         GameConfig config = ExperienceMod.get().getConfigManager().getConfig();
         HytaleLogger.getLogger().at(Level.INFO).log("[ExperienceMod] Apparition des PNJ aux positions configurées via NPCPlugin...");
 
+        // Exécution différée pour respecter le thread de simulation
         monde.execute(() -> {
             Store<EntityStore> store = monde.getEntityStore().getStore();
             String npcType = "SKELETON_BURNT_ARCHER";
@@ -107,12 +114,13 @@ public class NPCManager {
     }
 
     /**
-     * Configure la Laisse (Leash) et les Alliances (Friendly Fire) pour le PNJ spécifié.
+     * Configure la Laisse (Leash) pour qu'il reste sur son point de spawn
+     * et l'Attitude (Alliances) pour qu'il ne s'en prenne pas à ses alliés.
      */
     private void configurerIA(Ref<EntityStore> npcRef, Store<EntityStore> store, Vector3d pointAttache, boolean isBlueTeam) {
         NPCEntity npcEntity = store.getComponent(npcRef, NPCEntity.getComponentType());
         if (npcEntity != null) {
-            // Empêcher de s'éloigner du point de spawn
+            // Empêcher de s'éloigner du point de spawn (Laisse Hytale native)
             npcEntity.saveLeashInformation(pointAttache, ROTATION_DEFAUT);
         }
 
@@ -149,12 +157,19 @@ public class NPCManager {
         return entite != null && estPnjRouge(entite.getReference());
     }
 
+    /**
+     * Supprime proprement les PNJ du monde (fin de partie).
+     * @param buffer Optionnel: Buffer ECS pour suppression différée.
+     */
     public void supprimerPNJ(CommandBuffer<EntityStore> buffer) {
         if (monde != null) {
+            // Suppression via Buffer (système ECS tick)
             if (buffer != null) {
                 if (pnjBleuRef != null) { buffer.removeEntity(pnjBleuRef, RemoveReason.REMOVE); }
                 if (pnjRougeRef != null) { buffer.removeEntity(pnjRougeRef, RemoveReason.REMOVE); }
-            } else {
+            } 
+            // Suppression directe (thread simulation)
+            else {
                 monde.execute(() -> {
                     Store<EntityStore> store = monde.getEntityStore().getStore();
                     if (pnjBleuRef != null && store.getArchetype(pnjBleuRef) != null) {

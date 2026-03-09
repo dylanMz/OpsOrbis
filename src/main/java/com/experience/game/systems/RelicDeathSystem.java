@@ -12,8 +12,8 @@ import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 /**
- * Système ECS réagissant à la mort d'un joueur.
- * Permet de faire tomber la relique et de téléporter le joueur au spawn.
+ * Système ECS réagissant à la mort d'un joueur (ajout du DeathComponent).
+ * Gère principalement le retour des reliques portées vers leur base d'origine.
  */
 public class RelicDeathSystem extends DeathSystems.OnDeathSystem {
 
@@ -32,11 +32,15 @@ public class RelicDeathSystem extends DeathSystems.OnDeathSystem {
 
     @Override
     public void onComponentAdded(Ref<EntityStore> ref, DeathComponent death, Store<EntityStore> store, CommandBuffer<EntityStore> buffer) {
+        // Récupération de l'entité joueur décédée
         Player joueur = store.getComponent(ref, Player.getComponentType());
+        
+        // On n'agit que si le joueur est valide et que la partie est active
         if (joueur != null && gameManager.getEtatActuel() == GameManager.GameState.EN_COURS) {
             
-            // 1. Retour de la relique si le joueur en portait une
+            // Vérification si le joueur portait une relique au moment de sa mort
             if (gameManager.getRelicManager() != null) {
+                // Le manager se chargera de réinitialiser le porteur et de faire respawner la relique
                 gameManager.getRelicManager().gererMortDuPorteur(joueur);
             }
         }

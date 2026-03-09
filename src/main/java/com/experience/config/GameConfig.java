@@ -9,18 +9,18 @@ import com.hypixel.hytale.math.vector.Vector3d;
  */
 public class GameConfig {
 
-    private Box blueZone;
-    private Box redZone;
-    private Vector3d blueRelic1;
-    private Vector3d blueRelic2;
-    private Vector3d redRelic1;
-    private Vector3d redRelic2;
+    private Box blueZone;          // Zone de spawn équipe Bleue
+    private Box redZone;           // Zone de spawn équipe Rouge
+    private Vector3d blueRelic1;    // Position initiale Relique Bleue 1
+    private Vector3d blueRelic2;    // Position initiale Relique Bleue 2
+    private Vector3d redRelic1;     // Position initiale Relique Rouge 1
+    private Vector3d redRelic2;     // Position initiale Relique Rouge 2
 
-    private Vector3d blueNpcSpawn;
-    private Vector3d redNpcSpawn;
+    private Vector3d blueNpcSpawn;  // Position spawn PNJ Bleu
+    private Vector3d redNpcSpawn;   // Position spawn PNJ Rouge
 
-    private Box blueDepositZone;
-    private Box redDepositZone;
+    private Box blueDepositZone;    // Zone où la team Bleue dépose les reliques volées
+    private Box redDepositZone;     // Zone où la team Rouge dépose les reliques volées
 
     public GameConfig() {
         // Valeurs par défaut pour éviter les NullPointerException
@@ -75,9 +75,9 @@ public class GameConfig {
     public Vector3d getBoxCenter(Box box) {
         if (box == null) return new Vector3d(0, 50, 0);
         return new Vector3d(
-            (box.getMin().x + box.getMax().x) / 2.0,
-            box.getMin().y, // On spawn au sol de la zone
-            (box.getMin().z + box.getMax().z) / 2.0
+            (box.getMin().x + box.getMax().x) / 2.0, // Milieu X
+            box.getMin().y,                          // Pieds au sol (Min Y)
+            (box.getMin().z + box.getMax().z) / 2.0  // Milieu Z
         );
     }
 }

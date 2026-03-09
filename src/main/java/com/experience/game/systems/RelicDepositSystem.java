@@ -14,6 +14,10 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.system.tick.ArchetypeTickingSystem;
 
+/**
+ * Système ECS qui vérifie périodiquement si un porteur de relique est 
+ * entré dans sa propre zone de dépôt.
+ */
 public class RelicDepositSystem extends ArchetypeTickingSystem<EntityStore> {
 
     private final Query<EntityStore> query;
@@ -43,6 +47,7 @@ public class RelicDepositSystem extends ArchetypeTickingSystem<EntityStore> {
             Player joueur = chunk.getComponent(i, Player.getComponentType());
             if (joueur == null) continue;
 
+            // Appel de la vérification de dépôt dans le manager
             relicManager.verifierDepot(joueur, buffer);
         }
     }
