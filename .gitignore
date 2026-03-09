@@ -18,7 +18,7 @@ bin/
 # VS Code
 .vscode/
 
-# OS generated files
+# OS generated filesq
 .DS_Store
 .DS_Store?
 ._*
@@ -29,6 +29,10 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Compiled and Downloaded binaries
+*.jar
+*.class
 
 # Temp files
 *.tmp
