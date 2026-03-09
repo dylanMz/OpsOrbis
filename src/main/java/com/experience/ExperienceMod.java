@@ -3,6 +3,7 @@ package com.experience;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.experience.game.GameManager;
+import com.experience.game.FriendlyFireSystem;
 import com.experience.commands.GameCommand;
 import com.experience.config.ConfigManager;
 import java.util.logging.Level;
@@ -37,6 +38,9 @@ public class ExperienceMod extends JavaPlugin {
 
         // 3. Enregistrement des commandes
         getCommandRegistry().registerCommand(new GameCommand(gameManager));
+
+        // 4. Enregistrement des systèmes (Friendly Fire et Leash)
+        getEntityStoreRegistry().registerSystem(new FriendlyFireSystem(gameManager), true);
         
         getLogger().at(Level.INFO).log("Initialisation des systèmes et commandes terminée.");
     }

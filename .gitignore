@@ -38,3 +38,10 @@ Thumbs.db
 *.tmp
 *.bak
 *.swp
+
+# Fichiers HTML locaux
+*.html
+
+# Fichiers de données ou logs de test
+npc_spawn_full.txt
+

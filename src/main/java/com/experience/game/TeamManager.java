@@ -67,6 +67,15 @@ public class TeamManager {
         }
     }
 
+    public boolean estDansEquipe(Player joueur, String equipe) {
+        if ("Bleue".equalsIgnoreCase(equipe)) {
+            return equipeBleue.contains(joueur);
+        } else if ("Rouge".equalsIgnoreCase(equipe)) {
+            return equipeRouge.contains(joueur);
+        }
+        return false;
+    }
+
     public List<Player> getEquipeBleue() { return equipeBleue; }
     public List<Player> getEquipeRouge() { return equipeRouge; }
 }

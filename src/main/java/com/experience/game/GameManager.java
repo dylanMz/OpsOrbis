@@ -41,7 +41,7 @@ public class GameManager {
         }
 
         this.etatActuel = GameState.EN_COURS;
-        this.npcManager = new NPCManager(monde);
+        this.npcManager = new NPCManager(monde, teamManager);
 
         npcManager.faireApparaitrePNJ();
 
