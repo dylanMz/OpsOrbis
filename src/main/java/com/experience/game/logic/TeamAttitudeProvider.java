@@ -1,4 +1,4 @@
-package com.experience.game;
+package com.experience.game.logic;
 
 import com.hypixel.hytale.component.ComponentAccessor;
 import com.hypixel.hytale.component.Ref;

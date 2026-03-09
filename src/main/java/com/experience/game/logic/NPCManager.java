@@ -1,4 +1,4 @@
-package com.experience.game;
+package com.experience.game.logic;
 
 import com.experience.ExperienceMod;
 import com.experience.config.GameConfig;
@@ -9,6 +9,8 @@ import com.hypixel.hytale.server.npc.NPCPlugin;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.RemoveReason;
+import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -18,6 +20,9 @@ import com.hypixel.hytale.server.npc.blackboard.view.attitude.AttitudeView;
 import com.hypixel.hytale.server.npc.blackboard.view.attitude.IAttitudeProvider;
 import it.unimi.dsi.fastutil.Pair;
 import java.util.logging.Level;
+import java.util.Set;
+import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Gère le spawn et la suppression des PNJ des deux équipes.
@@ -31,7 +36,7 @@ public class NPCManager {
     private Vector3d spawnBleu;
     private Vector3d spawnRouge;
 
-    private final java.util.Set<Ref<EntityStore>> returningNPCs = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
+    private final Set<Ref<EntityStore>> returningNPCs = Collections.newSetFromMap(new ConcurrentHashMap<>());
     public static final float PNJ_MAX_HP = 500.0f;
     private static final Vector3f ROTATION_DEFAUT = new Vector3f(0, 0, 0);
 
@@ -66,7 +71,7 @@ public class NPCManager {
             String npcType = "SKELETON_BURNT_ARCHER";
 
             // ==== SPAWN PNJ BLEU ====
-            Vector3d posBleu = config.getBlueSpawn();
+            Vector3d posBleu = config.getBlueNpcSpawn();
             if (posBleu == null) {
                 HytaleLogger.getLogger().at(Level.SEVERE).log("[ExperienceMod] ERREUR CRITIQUE: La position du spawn Bleu est NULL !");
             } else {
@@ -83,7 +88,7 @@ public class NPCManager {
             }
 
             // ==== SPAWN PNJ ROUGE ====
-            Vector3d posRouge = config.getRedSpawn();
+            Vector3d posRouge = config.getRedNpcSpawn();
             if (posRouge == null) {
                 HytaleLogger.getLogger().at(Level.SEVERE).log("[ExperienceMod] ERREUR CRITIQUE: La position du spawn Rouge est NULL !");
             } else {
@@ -144,17 +149,22 @@ public class NPCManager {
         return entite != null && estPnjRouge(entite.getReference());
     }
 
-    public void supprimerPNJ() {
+    public void supprimerPNJ(CommandBuffer<EntityStore> buffer) {
         if (monde != null) {
-            monde.execute(() -> {
-                Store<EntityStore> store = monde.getEntityStore().getStore();
-                if (pnjBleuRef != null && store.getArchetype(pnjBleuRef) != null) {
-                    // Logique pour détruire l'entité si nécessaire (store.destroyComponent...)
-                }
-                if (pnjRougeRef != null && store.getArchetype(pnjRougeRef) != null) {
-                    
-                }
-            });
+            if (buffer != null) {
+                if (pnjBleuRef != null) { buffer.removeEntity(pnjBleuRef, RemoveReason.REMOVE); }
+                if (pnjRougeRef != null) { buffer.removeEntity(pnjRougeRef, RemoveReason.REMOVE); }
+            } else {
+                monde.execute(() -> {
+                    Store<EntityStore> store = monde.getEntityStore().getStore();
+                    if (pnjBleuRef != null && store.getArchetype(pnjBleuRef) != null) {
+                        store.removeEntity(pnjBleuRef, RemoveReason.REMOVE);
+                    }
+                    if (pnjRougeRef != null && store.getArchetype(pnjRougeRef) != null) {
+                        store.removeEntity(pnjRougeRef, RemoveReason.REMOVE);
+                    }
+                });
+            }
         }
         pnjBleuRef = null;
         pnjRougeRef = null;

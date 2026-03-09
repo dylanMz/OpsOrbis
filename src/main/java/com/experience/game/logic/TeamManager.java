@@ -1,4 +1,4 @@
-package com.experience.game;
+package com.experience.game.logic;
 
 import com.experience.ExperienceMod;
 import com.experience.config.GameConfig;
@@ -8,6 +8,7 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.experience.utils.HytaleUtils;
 import java.awt.Color;
 
 import java.util.ArrayList;
@@ -23,6 +24,10 @@ public class TeamManager {
         this.equipeRouge = new ArrayList<>();
     }
 
+    /**
+     * Ajoute un joueur à une équipe (équilibrage automatique) et le téléporte.
+     * @param joueur Le joueur à intégrer.
+     */
     public void ajouterJoueur(Player joueur) {
         if (equipeBleue.contains(joueur) || equipeRouge.contains(joueur)) {
             return;
@@ -54,17 +59,21 @@ public class TeamManager {
         equipeRouge.remove(joueur);
     }
 
-    private void teleporterJoueur(Player joueur, Vector3d position) {
-        World monde = joueur.getWorld();
-        if (monde != null) {
-            monde.execute(() -> {
-                monde.getEntityStore().getStore().addComponent(
-                    joueur.getReference(), 
-                    Teleport.getComponentType(), 
-                    Teleport.createForPlayer(position, new Vector3f(0, 0, 0))
-                );
-            });
+    /**
+     * Téléporte le joueur à la base de son équipe actuelle.
+     * @param joueur Le joueur à téléporter.
+     */
+    public void teleporterAuSpawn(Player joueur) {
+        GameConfig config = ExperienceMod.get().getConfigManager().getConfig();
+        if (equipeBleue.contains(joueur)) {
+            teleporterJoueur(joueur, config.getBoxCenter(config.getBlueZone()));
+        } else if (equipeRouge.contains(joueur)) {
+            teleporterJoueur(joueur, config.getBoxCenter(config.getRedZone()));
         }
+    }
+
+    private void teleporterJoueur(Player joueur, Vector3d position) {
+        HytaleUtils.teleporterJoueur(joueur, position);
     }
 
     public boolean estDansEquipe(Player joueur, String equipe) {
@@ -73,6 +82,12 @@ public class TeamManager {
         } else if ("Rouge".equalsIgnoreCase(equipe)) {
             return equipeRouge.contains(joueur);
         }
+        return false;
+    }
+
+    public boolean sontDansLaMemeEquipe(Player joueur1, Player joueur2) {
+        if (equipeBleue.contains(joueur1) && equipeBleue.contains(joueur2)) return true;
+        if (equipeRouge.contains(joueur1) && equipeRouge.contains(joueur2)) return true;
         return false;
     }
 

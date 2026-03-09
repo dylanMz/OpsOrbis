@@ -45,3 +45,6 @@ Thumbs.db
 # Fichiers de données ou logs de test
 npc_spawn_full.txt
 
+# Decompiled temporary files
+temp_*/
+temp_*.java

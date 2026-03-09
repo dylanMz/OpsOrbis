@@ -2,8 +2,13 @@ package com.experience;
 
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
-import com.experience.game.GameManager;
-import com.experience.game.FriendlyFireSystem;
+import com.experience.game.logic.GameManager;
+import com.experience.game.systems.FriendlyFireSystem;
+import com.experience.game.systems.PlayerFriendlyFireSystem;
+import com.experience.game.systems.RelicPickupSystem;
+import com.experience.game.systems.RelicDepositSystem;
+import com.experience.game.systems.RelicDeathSystem;
+import com.experience.game.systems.PlayerRespawnSystem;
 import com.experience.commands.GameCommand;
 import com.experience.config.ConfigManager;
 import java.util.logging.Level;
@@ -39,8 +44,13 @@ public class ExperienceMod extends JavaPlugin {
         // 3. Enregistrement des commandes
         getCommandRegistry().registerCommand(new GameCommand(gameManager));
 
-        // 4. Enregistrement des systèmes (Friendly Fire et Leash)
+        // 4. Enregistrement des systèmes ECS (Dommages, Pickups, Dépôts)
         getEntityStoreRegistry().registerSystem(new FriendlyFireSystem(gameManager), true);
+        getEntityStoreRegistry().registerSystem(new PlayerFriendlyFireSystem(gameManager), true);
+        getEntityStoreRegistry().registerSystem(new RelicPickupSystem(gameManager), true);
+        getEntityStoreRegistry().registerSystem(new RelicDepositSystem(gameManager), true);
+        getEntityStoreRegistry().registerSystem(new RelicDeathSystem(gameManager), true);
+        getEntityStoreRegistry().registerSystem(new PlayerRespawnSystem(gameManager), true);
         
         getLogger().at(Level.INFO).log("Initialisation des systèmes et commandes terminée.");
     }
@@ -55,7 +65,6 @@ public class ExperienceMod extends JavaPlugin {
         if (configManager != null) {
             configManager.save();
         }
-        getLogger().at(Level.INFO).log("Le mod ExperienceMod est en cours de désactivation...");
     }
 
     public GameManager getGameManager() {

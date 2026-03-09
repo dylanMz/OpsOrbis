@@ -1,4 +1,4 @@
-package com.experience.game;
+package com.experience.game.logic;
 
 import com.experience.ExperienceMod;
 import com.experience.kits.KitManager;
@@ -6,21 +6,31 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.logger.HytaleLogger;
-import java.awt.Color;
+import com.experience.utils.HytaleUtils;
 import java.util.logging.Level;
+import java.awt.Color;
+import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.component.Archetype;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.component.ArchetypeChunk;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 public class GameManager {
 
+    /**
+     * États possibles de la partie.
+     */
     public enum GameState {
-        ATTENTE,
-        EN_COURS,
-        TERMINEE
+        ATTENTE,   // En attente de joueurs ou de démarrage
+        EN_COURS,  // La partie est active
+        TERMINEE   // Un gagnant a été désigné
     }
 
     private GameState etatActuel;
     private final TeamManager teamManager;
     private final KitManager kitManager;
     private NPCManager npcManager;
+    private RelicManager relicManager;
     private final ExperienceMod plugin;
 
     public GameManager(ExperienceMod plugin) {
@@ -30,6 +40,10 @@ public class GameManager {
         this.kitManager = new KitManager();
     }
 
+    /**
+     * Démarre la partie, fait apparaître les PNJ et les reliques, et donne les kits.
+     * @param monde Le monde où la partie se déroule.
+     */
     public void demarrerPartie(World monde) {
         if (monde == null) return;
         
@@ -42,8 +56,10 @@ public class GameManager {
 
         this.etatActuel = GameState.EN_COURS;
         this.npcManager = new NPCManager(monde, teamManager);
+        this.relicManager = new RelicManager(monde, teamManager);
 
         npcManager.faireApparaitrePNJ();
+        relicManager.initRelics();
 
         for (Player joueur : teamManager.getEquipeBleue()) {
             kitManager.donnerEquipement(joueur);
@@ -52,32 +68,39 @@ public class GameManager {
             kitManager.donnerEquipement(joueur);
         }
 
-        diffuserMessage(monde, Message.raw("La partie commence ! Défendez votre PNJ !").color(Color.GREEN));
+        HytaleUtils.diffuserMessage(monde, Message.raw("La partie commence ! Défendez votre PNJ !").color(Color.GREEN));
     }
 
-    public void terminerPartie(World monde, String equipeGagnante) {
+    /**
+     * Termine la partie, annonce le vainqueur et nettoie le monde.
+     * @param monde Le monde actuel.
+     * @param equipeGagnante Nom de l'équipe victorieuse.
+     * @param buffer CommandBuffer pour la suppression sécurisée d'entités.
+     */
+    public void terminerPartie(World monde, String equipeGagnante, com.hypixel.hytale.component.CommandBuffer<EntityStore> buffer) {
         this.etatActuel = GameState.TERMINEE;
-        diffuserMessage(monde, Message.join(
+        HytaleUtils.diffuserMessage(monde, Message.join(
             Message.raw("La partie est terminée ! L'équipe ").color(Color.ORANGE),
             Message.raw(equipeGagnante).color(equipeGagnante.equals("Bleue") ? Color.BLUE : Color.RED),
             Message.raw(" a gagné !").color(Color.ORANGE)
         ));
 
+        // Nettoyage des entités de la partie avec Buffer safe
         if (npcManager != null) {
-            npcManager.supprimerPNJ();
+            npcManager.supprimerPNJ(buffer);
+        }
+        if (relicManager != null) {
+            relicManager.supprimerReliques(buffer);
         }
     }
 
     public void diffuserMessage(World monde, Message message) {
-        // Envoyer à TOUS les joueurs du monde pour plus de visibilité
-        for (Player p : monde.getPlayers()) {
-            p.sendMessage(message);
-        }
-        HytaleLogger.getLogger().at(Level.INFO).log("[ExperienceMod] " + message.getRawText());
+        HytaleUtils.diffuserMessage(monde, message);
     }
 
     public GameState getEtatActuel() { return etatActuel; }
     public TeamManager getTeamManager() { return teamManager; }
     public KitManager getKitManager() { return kitManager; }
     public NPCManager getNpcManager() { return npcManager; }
+    public RelicManager getRelicManager() { return relicManager; }
 }
