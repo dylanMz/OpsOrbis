@@ -18,7 +18,17 @@ import com.hypixel.hytale.server.core.prefab.selection.SelectionProvider;
 import java.awt.*;
 
 /**
- * Commande principale du mini-jeu : /game
+ * Commande principale : /game
+ *
+ * Sous-commandes disponibles :
+ *   /game join                              — Rejoindre une équipe
+ *   /game kit <guerrier|archer|mage>        — Choisir un kit
+ *   /game start                             — Démarrer la partie
+ *   /game config setzone <attaquant|defenseur>
+ *   /game config setrelic <1|2>
+ *   /game config setnpcspawn <1|2>
+ *   /game config setdeposit
+ *   /game config save
  */
 public class GameCommand extends CommandBase {
 
@@ -35,17 +45,14 @@ public class GameCommand extends CommandBase {
         if (!ctx.isPlayer()) return;
 
         Player joueur = (Player) ctx.sender();
-        String input = ctx.getInputString();
-        String[] args = input.trim().split("\\s+");
+        String[] args = ctx.getInputString().trim().split("\\s+");
 
         if (args.length < 2) {
             joueur.sendMessage(Message.raw("Usage: /game <join|role|kit|start|config>").color(Color.RED));
             return;
         }
 
-        String subCommand = args[1].toLowerCase();
-        
-        switch (subCommand) {
+        switch (args[1].toLowerCase()) {
             case "join":
                 gameManager.getTeamManager().ajouterJoueur(joueur);
                 break;
@@ -63,7 +70,6 @@ public class GameCommand extends CommandBase {
                 break;
             default:
                 joueur.sendMessage(Message.raw("Commande inconnue.").color(Color.RED));
-                break;
         }
     }
 
@@ -115,147 +121,155 @@ public class GameCommand extends CommandBase {
         }
 
         if (args.length < 3) {
-            joueur.sendMessage(Message.raw("Usage: /game config <setzone|setrelic|setdeposit|setnpcspawn|save> ...").color(Color.RED));
+            envoyerAideConfig(joueur);
             return;
         }
 
-        String action = args[2].toLowerCase();
         GameConfig config = ExperienceMod.get().getConfigManager().getConfig();
+        switch (args[2].toLowerCase()) {
 
-        switch (action) {
+            // ── Zone de spawn ──────────────────────────────────────────────────
             case "setzone":
                 if (args.length < 4) {
-                    joueur.sendMessage(Message.raw("Usage: /game config setzone <blue|red>").color(Color.RED));
+                    joueur.sendMessage(Message.raw("Usage: /game config setzone <attaquant|defenseur>").color(Color.RED));
                     return;
                 }
-                setZoneFromSelection(joueur, args[3].equalsIgnoreCase("blue"), config);
+                setZoneDepuisSelection(joueur, args[3], config);
                 break;
 
+            // ── Position des reliques (2 reliques, côté défenseur) ─────────────
             case "setrelic":
                 if (args.length < 4) {
-                    joueur.sendMessage(Message.raw("Usage: /game config setrelic <b1|b2|r1|r2>").color(Color.RED));
+                    joueur.sendMessage(Message.raw("Usage: /game config setrelic <1|2>").color(Color.RED));
                     return;
                 }
-                assert joueur.getWorld() != null;
-                joueur.getWorld().execute(() -> {
-                    assert joueur.getReference() != null;
-                    TransformComponent transform = joueur.getWorld().getEntityStore().getStore().getComponent(joueur.getReference(), TransformComponent.getComponentType());
-                    if (transform == null) return;
-                    Vector3d currentPos = transform.getPosition().clone();
-                    switch (args[3].toLowerCase()) {
-                        case "b1":
-                            config.setBlueRelic1(currentPos);
-                            joueur.sendMessage(Message.raw("Relique Bleue 1 définie.").color(Color.GREEN));
-                            break;
-                        case "b2":
-                            config.setBlueRelic2(currentPos);
-                            joueur.sendMessage(Message.raw("Relique Bleue 2 définie.").color(Color.GREEN));
-                            break;
-                        case "r1":
-                            config.setRedRelic1(currentPos);
-                            joueur.sendMessage(Message.raw("Relique Rouge 1 définie.").color(Color.GREEN));
-                            break;
-                        case "r2":
-                            config.setRedRelic2(currentPos);
-                            joueur.sendMessage(Message.raw("Relique Rouge 2 définie.").color(Color.GREEN));
-                            break;
-                        default:
-                            joueur.sendMessage(Message.raw("Relique invalide (choisir b1, b2, r1, r2).").color(Color.RED));
-                            break;
-                    }
-                });
+                setRelicDepuisPosition(joueur, args[3], config);
                 break;
 
-            case "setdeposit":
-                if (args.length < 4) {
-                    joueur.sendMessage(Message.raw("Usage: /game config setdeposit <blue|red>").color(Color.RED));
-                    return;
-                }
-                setDepositZoneFromSelection(joueur, args[3].equalsIgnoreCase("blue"), config);
-                break;
-
+            // ── Spawn PNJ (1 ou 2) ──────────────────────────────────────────────
             case "setnpcspawn":
                 if (args.length < 4) {
-                    joueur.sendMessage(Message.raw("Usage: /game config setnpcspawn <blue|red>").color(Color.RED));
+                    joueur.sendMessage(Message.raw("Usage: /game config setnpcspawn <1|2>").color(Color.RED));
                     return;
                 }
-                assert joueur.getWorld() != null;
-                joueur.getWorld().execute(() -> {
-                    assert joueur.getReference() != null;
-                    TransformComponent transform = joueur.getWorld().getEntityStore().getStore().getComponent(joueur.getReference(), TransformComponent.getComponentType());
-                    if (transform == null) return;
-                    Vector3d currentPos = transform.getPosition().clone();
-                    if (args[3].equalsIgnoreCase("blue")) {
-                        config.setBlueNpcSpawn(currentPos);
-                        joueur.sendMessage(Message.raw("Spawn PNJ Bleu défini.").color(Color.GREEN));
-                    } else if (args[3].equalsIgnoreCase("red")) {
-                        config.setRedNpcSpawn(currentPos);
-                        joueur.sendMessage(Message.raw("Spawn PNJ Rouge défini.").color(Color.GREEN));
-                    } else {
-                        joueur.sendMessage(Message.raw("Équipe invalide.").color(Color.RED));
-                    }
-                });
+                setNpcSpawnDepuisPosition(joueur, args[3], config);
                 break;
 
+            // ── Zone de dépôt attaquants ────────────────────────────────────────
+            case "setdeposit":
+                setDepositDepuisSelection(joueur, config);
+                break;
+
+            // ── Sauvegarde ──────────────────────────────────────────────────────
             case "save":
                 ExperienceMod.get().getConfigManager().save();
                 joueur.sendMessage(Message.raw("Configuration sauvegardée !").color(Color.GREEN));
                 break;
+
+            default:
+                envoyerAideConfig(joueur);
         }
     }
 
-    /**
-     * Récupère la sélection de l'éditeur Hytale du joueur et l'assigne à une équipe.
-     */
-    private void setZoneFromSelection(Player joueur, boolean isBlue, GameConfig config) {
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private void envoyerAideConfig(Player joueur) {
+        joueur.sendMessage(Message.join(
+            Message.raw("Config — sous-commandes :").color(Color.YELLOW),
+            Message.raw("\n • setzone <attaquant|defenseur>  — Zone de spawn").color(Color.WHITE),
+            Message.raw("\n • setrelic <1|2>                — Position relique").color(Color.WHITE),
+            Message.raw("\n • setnpcspawn <1|2>             — Spawn PNJ").color(Color.WHITE),
+            Message.raw("\n • setdeposit                    — Zone dépôt attaquants").color(Color.WHITE),
+            Message.raw("\n • save                           — Sauvegarder").color(Color.WHITE)
+        ));
+    }
+
+    private void setZoneDepuisSelection(Player joueur, String equipe, GameConfig config) {
         SelectionProvider provider = SelectionManager.getSelectionProvider();
         if (provider == null) {
-            joueur.sendMessage(Message.raw("Erreur : SelectionProvider introuvable.").color(Color.RED));
+            joueur.sendMessage(Message.raw("SelectionProvider introuvable.").color(Color.RED));
             return;
         }
-
-        assert joueur.getWorld() != null;
-        joueur.getWorld().execute(() -> {
-            assert joueur.getReference() != null;
+        joueur.getWorld().execute(() ->
             provider.computeSelectionCopy(joueur.getReference(), joueur, (selection) -> {
-                if (selection != null && selection.hasSelectionBounds()) {
-                    Box newBox = new Box(selection.getSelectionMin().toVector3d(), selection.getSelectionMax().toVector3d());
-                    if (isBlue) {
-                        config.setBlueZone(newBox);
-                    } else {
-                        config.setRedZone(newBox);
-                    }
-                    joueur.sendMessage(Message.raw("Zone définie avec succès via l'outil d'édition !").color(Color.GREEN));
-                } else {
-                    joueur.sendMessage(Message.raw("Aucune zone sélectionnée dans l'éditeur.").color(Color.RED));
+                if (selection == null || !selection.hasSelectionBounds()) {
+                    joueur.sendMessage(Message.raw("Aucune zone sélectionnée.").color(Color.RED));
+                    return;
                 }
-            }, joueur.getWorld().getEntityStore().getStore());
+                Box newBox = new Box(selection.getSelectionMin().toVector3d(), selection.getSelectionMax().toVector3d());
+                switch (equipe.toLowerCase()) {
+                    case "attaquant":
+                        config.setAttackerZone(newBox);
+                        joueur.sendMessage(Message.raw("✓ Zone Attaquants définie.").color(Color.GREEN));
+                        break;
+                    case "defenseur":
+                        config.setDefenderZone(newBox);
+                        joueur.sendMessage(Message.raw("✓ Zone Défenseurs définie.").color(Color.GREEN));
+                        break;
+                    default:
+                        joueur.sendMessage(Message.raw("Équipe invalide (attaquant ou defenseur).").color(Color.RED));
+                }
+            }, joueur.getWorld().getEntityStore().getStore())
+        );
+    }
+
+    private void setRelicDepuisPosition(Player joueur, String num, GameConfig config) {
+        joueur.getWorld().execute(() -> {
+            TransformComponent t = joueur.getWorld().getEntityStore().getStore()
+                .getComponent(joueur.getReference(), TransformComponent.getComponentType());
+            if (t == null) return;
+            Vector3d pos = t.getPosition().clone();
+            switch (num) {
+                case "1":
+                    config.setRelic1(pos);
+                    joueur.sendMessage(Message.raw("✓ Relique 1 positionnée.").color(Color.GREEN));
+                    break;
+                case "2":
+                    config.setRelic2(pos);
+                    joueur.sendMessage(Message.raw("✓ Relique 2 positionnée.").color(Color.GREEN));
+                    break;
+                default:
+                    joueur.sendMessage(Message.raw("Numéro invalide (1 ou 2).").color(Color.RED));
+            }
         });
     }
 
-    private void setDepositZoneFromSelection(Player joueur, boolean isBlue, GameConfig config) {
+    private void setNpcSpawnDepuisPosition(Player joueur, String num, GameConfig config) {
+        joueur.getWorld().execute(() -> {
+            TransformComponent t = joueur.getWorld().getEntityStore().getStore()
+                .getComponent(joueur.getReference(), TransformComponent.getComponentType());
+            if (t == null) return;
+            Vector3d pos = t.getPosition().clone();
+            switch (num) {
+                case "1":
+                    config.setNpcSpawn1(pos);
+                    joueur.sendMessage(Message.raw("✓ Spawn PNJ 1 défini.").color(Color.GREEN));
+                    break;
+                case "2":
+                    config.setNpcSpawn2(pos);
+                    joueur.sendMessage(Message.raw("✓ Spawn PNJ 2 défini.").color(Color.GREEN));
+                    break;
+                default:
+                    joueur.sendMessage(Message.raw("Numéro invalide (1 ou 2).").color(Color.RED));
+            }
+        });
+    }
+
+    private void setDepositDepuisSelection(Player joueur, GameConfig config) {
         SelectionProvider provider = SelectionManager.getSelectionProvider();
         if (provider == null) {
-            joueur.sendMessage(Message.raw("Erreur : SelectionProvider introuvable.").color(Color.RED));
+            joueur.sendMessage(Message.raw("SelectionProvider introuvable.").color(Color.RED));
             return;
         }
-
-        assert joueur.getWorld() != null;
-        joueur.getWorld().execute(() -> {
-            assert joueur.getReference() != null;
+        joueur.getWorld().execute(() ->
             provider.computeSelectionCopy(joueur.getReference(), joueur, (selection) -> {
-                if (selection != null && selection.hasSelectionBounds()) {
-                    Box newBox = new Box(selection.getSelectionMin().toVector3d(), selection.getSelectionMax().toVector3d());
-                    if (isBlue) {
-                        config.setBlueDepositZone(newBox);
-                    } else {
-                        config.setRedDepositZone(newBox);
-                    }
-                    joueur.sendMessage(Message.raw("Zone de dépôt définie avec succès !").color(Color.GREEN));
-                } else {
-                    joueur.sendMessage(Message.raw("Aucune zone sélectionnée dans l'éditeur.").color(Color.RED));
+                if (selection == null || !selection.hasSelectionBounds()) {
+                    joueur.sendMessage(Message.raw("Aucune zone sélectionnée.").color(Color.RED));
+                    return;
                 }
-            }, joueur.getWorld().getEntityStore().getStore());
-        });
+                config.setDepositZone(new Box(selection.getSelectionMin().toVector3d(), selection.getSelectionMax().toVector3d()));
+                joueur.sendMessage(Message.raw("✓ Zone de dépôt Attaquants définie.").color(Color.GREEN));
+            }, joueur.getWorld().getEntityStore().getStore())
+        );
     }
 }

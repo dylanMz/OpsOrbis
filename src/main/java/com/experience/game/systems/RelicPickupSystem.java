@@ -16,8 +16,8 @@ import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.system.tick.ArchetypeTickingSystem;
 
 /**
- * Système ECS de type ArchetypeTickingSystem qui vérifie périodiquement 
- * la proximité entre les joueurs et les points de spawn des reliques.
+ * Système ECS qui vérifie si un joueur est à portée d'une relique pour la ramasser.
+ * Seules les 2 reliques des défenseurs sont vérifiées (positions RedRelic1 et RedRelic2).
  */
 public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
 
@@ -41,7 +41,6 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
 
     @Override
     public void tick(float delta, ArchetypeChunk<EntityStore> chunk, Store<EntityStore> store, CommandBuffer<EntityStore> buffer) {
-        // On ne vérifie que si la partie est en cours
         if (gameManager == null || gameManager.getEtatActuel() != GameManager.GameState.EN_COURS || gameManager.getRelicManager() == null) return;
         GameConfig config = ExperienceMod.get().getConfigManager().getConfig();
         RelicManager relicManager = gameManager.getRelicManager();
@@ -52,20 +51,15 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
             if (joueur == null || transform == null) continue;
 
             Vector3d pos = transform.getPosition();
-            double pRange = 1.5; // Distance de ramassage
+            double pRange = 1.5;
 
-            // Vérification pour chaque relique (disponibilité, porteur actuel, distance)
-            if (config.getBlueRelic1() != null && relicManager.estReliqueDisponible(true, 1) && relicManager.getCarrierBlueRelic1() == null && pos.distanceTo(config.getBlueRelic1()) <= pRange) {
-                relicManager.ramasserRelique(joueur, true, 1, buffer);
-            }
-            else if (config.getBlueRelic2() != null && relicManager.estReliqueDisponible(true, 2) && relicManager.getCarrierBlueRelic2() == null && pos.distanceTo(config.getBlueRelic2()) <= pRange) {
-                relicManager.ramasserRelique(joueur, true, 2, buffer);
-            }
-            else if (config.getRedRelic1() != null && relicManager.estReliqueDisponible(false, 1) && relicManager.getCarrierRedRelic1() == null && pos.distanceTo(config.getRedRelic1()) <= pRange) {
-                relicManager.ramasserRelique(joueur, false, 1, buffer);
-            }
-            else if (config.getRedRelic2() != null && relicManager.estReliqueDisponible(false, 2) && relicManager.getCarrierRedRelic2() == null && pos.distanceTo(config.getRedRelic2()) <= pRange) {
-                relicManager.ramasserRelique(joueur, false, 2, buffer);
+            // Seules les 2 reliques des défenseurs (positions RedRelic1 et RedRelic2)
+            if (config.getRedRelic1() != null && relicManager.estReliqueDisponible(false, 1)
+                    && relicManager.getCarrierRelic1() == null && pos.distanceTo(config.getRedRelic1()) <= pRange) {
+                relicManager.ramasserRelique(joueur, 1, buffer);
+            } else if (config.getRedRelic2() != null && relicManager.estReliqueDisponible(false, 2)
+                    && relicManager.getCarrierRelic2() == null && pos.distanceTo(config.getRedRelic2()) <= pRange) {
+                relicManager.ramasserRelique(joueur, 2, buffer);
             }
         }
     }
