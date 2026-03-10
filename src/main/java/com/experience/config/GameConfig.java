@@ -4,70 +4,84 @@ import com.hypixel.hytale.math.shape.Box;
 import com.hypixel.hytale.math.vector.Vector3d;
 
 /**
- * Modèle de données pour la configuration du mini-jeu.
- * Contient les zones d'équipe et les points de spawn des PNJ.
+ * Configuration du mode Attaquants vs Défenseurs.
+ *
+ * Zones :
+ * - attackerZone    : spawn des attaquants
+ * - defenderZone    : spawn des défenseurs (+ base des reliques)
+ * - relic1 / relic2 : positions des 2 reliques dans la base défenseurs
+ * - depositZone     : zone de dépôt des attaquants (pour capturer les reliques)
+ * - npcSpawn1/2     : spawns des 2 PNJs défenseurs
  */
 public class GameConfig {
 
-    private Box blueZone;          // Zone de spawn équipe Bleue
-    private Box redZone;           // Zone de spawn équipe Rouge
-    private Vector3d blueRelic1;    // Position initiale Relique Bleue 1
-    private Vector3d blueRelic2;    // Position initiale Relique Bleue 2
-    private Vector3d redRelic1;     // Position initiale Relique Rouge 1
-    private Vector3d redRelic2;     // Position initiale Relique Rouge 2
+    // Zones de spawn des équipes
+    private Box attackerZone;      // Spawn attaquants
+    private Box defenderZone;      // Spawn défenseurs
 
-    private Vector3d blueNpcSpawn;  // Position spawn PNJ Bleu
-    private Vector3d redNpcSpawn;   // Position spawn PNJ Rouge
+    // Positions des 2 reliques (côté défenseurs)
+    private Vector3d relic1;
+    private Vector3d relic2;
 
-    private Box blueDepositZone;    // Zone où la team Bleue dépose les reliques volées
-    private Box redDepositZone;     // Zone où la team Rouge dépose les reliques volées
+    // Spawns des 2 PNJs (protègent les défenseurs)
+    private Vector3d npcSpawn1;
+    private Vector3d npcSpawn2;
+
+    // Zone de dépôt des attaquants (pour capter les reliques)
+    private Box depositZone;
 
     public GameConfig() {
-        // Valeurs par défaut pour éviter les NullPointerException
-        this.blueZone = new Box(90, 45, 90, 110, 55, 110);
-        this.redZone = new Box(-110, 45, -110, -90, 55, -90);
-        this.blueRelic1 = new Vector3d(100, 50, 105);
-        this.blueRelic2 = new Vector3d(110, 50, 105);
-        this.redRelic1 = new Vector3d(-100, 50, -105);
-        this.redRelic2 = new Vector3d(-110, 50, -105);
-        
-        this.blueNpcSpawn = new Vector3d(100, 50, 100);
-        this.redNpcSpawn = new Vector3d(-100, 50, -100);
-        
-        this.blueDepositZone = new Box(95, 45, 95, 105, 55, 105);
-        this.redDepositZone = new Box(-105, 45, -105, -95, 55, -95);
+        // Valeurs par défaut
+        this.attackerZone  = new Box(90, 45, 90, 110, 55, 110);
+        this.defenderZone  = new Box(-110, 45, -110, -90, 55, -90);
+        this.relic1        = new Vector3d(-100, 50, -105);
+        this.relic2        = new Vector3d(-110, 50, -105);
+        this.npcSpawn1     = new Vector3d(-100, 50, -100);
+        this.npcSpawn2     = new Vector3d(-100, 50, -100);
+        this.depositZone   = new Box(95, 45, 95, 105, 55, 105);
     }
 
-    // Getters et Setters
-    public Box getBlueZone() { return blueZone; }
-    public void setBlueZone(Box blueZone) { this.blueZone = blueZone; }
+    // ── Zones de spawn ──────────────────────────────────────────────────────
 
-    public Box getRedZone() { return redZone; }
-    public void setRedZone(Box redZone) { this.redZone = redZone; }
+    public Box getAttackerZone() { return attackerZone; }
+    public void setAttackerZone(Box attackerZone) { this.attackerZone = attackerZone; }
 
-    public Vector3d getBlueRelic1() { return blueRelic1; }
-    public void setBlueRelic1(Vector3d blueRelic1) { this.blueRelic1 = blueRelic1; }
+    public Box getDefenderZone() { return defenderZone; }
+    public void setDefenderZone(Box defenderZone) { this.defenderZone = defenderZone; }
 
-    public Vector3d getBlueRelic2() { return blueRelic2; }
-    public void setBlueRelic2(Vector3d blueRelic2) { this.blueRelic2 = blueRelic2; }
+    // ── Reliques ─────────────────────────────────────────────────────────────
 
-    public Vector3d getRedRelic1() { return redRelic1; }
-    public void setRedRelic1(Vector3d redRelic1) { this.redRelic1 = redRelic1; }
+    public Vector3d getRelic1() { return relic1; }
+    public void setRelic1(Vector3d relic1) { this.relic1 = relic1; }
 
-    public Vector3d getRedRelic2() { return redRelic2; }
-    public void setRedRelic2(Vector3d redRelic2) { this.redRelic2 = redRelic2; }
+    public Vector3d getRelic2() { return relic2; }
+    public void setRelic2(Vector3d relic2) { this.relic2 = relic2; }
 
-    public Box getBlueDepositZone() { return blueDepositZone; }
-    public void setBlueDepositZone(Box blueDepositZone) { this.blueDepositZone = blueDepositZone; }
+    // ── Spawns PNJ ───────────────────────────────────────────────────────────
 
-    public Box getRedDepositZone() { return redDepositZone; }
-    public void setRedDepositZone(Box redDepositZone) { this.redDepositZone = redDepositZone; }
+    public Vector3d getNpcSpawn1() { return npcSpawn1; }
+    public void setNpcSpawn1(Vector3d npcSpawn1) { this.npcSpawn1 = npcSpawn1; }
 
-    public Vector3d getBlueNpcSpawn() { return blueNpcSpawn; }
-    public void setBlueNpcSpawn(Vector3d blueNpcSpawn) { this.blueNpcSpawn = blueNpcSpawn; }
+    public Vector3d getNpcSpawn2() { return npcSpawn2; }
+    public void setNpcSpawn2(Vector3d npcSpawn2) { this.npcSpawn2 = npcSpawn2; }
 
-    public Vector3d getRedNpcSpawn() { return redNpcSpawn; }
-    public void setRedNpcSpawn(Vector3d redNpcSpawn) { this.redNpcSpawn = redNpcSpawn; }
+    // ── Zone de dépôt attaquants ─────────────────────────────────────────────
+
+    public Box getDepositZone() { return depositZone; }
+    public void setDepositZone(Box depositZone) { this.depositZone = depositZone; }
+
+    // ── Alias pour la compatibilité avec l'ancien code ───────────────────────
+
+    public Box getBlueZone() { return attackerZone; }
+    public Box getRedZone() { return defenderZone; }
+    public Vector3d getRedRelic1() { return relic1; }
+    public Vector3d getRedRelic2() { return relic2; }
+    public Vector3d getBlueRelic1() { return null; } // Supprimé
+    public Vector3d getBlueRelic2() { return null; } // Supprimé
+    public Vector3d getBlueNpcSpawn() { return npcSpawn1; }
+    public Vector3d getRedNpcSpawn() { return npcSpawn2; }
+    public Box getBlueDepositZone() { return depositZone; }
+    public Box getRedDepositZone() { return null; } // Supprimé
 
     /**
      * Calcule le centre d'une Box pour le spawn des joueurs.
@@ -75,9 +89,9 @@ public class GameConfig {
     public Vector3d getBoxCenter(Box box) {
         if (box == null) return new Vector3d(0, 50, 0);
         return new Vector3d(
-            (box.getMin().x + box.getMax().x) / 2.0, // Milieu X
-            box.getMin().y,                          // Pieds au sol (Min Y)
-            (box.getMin().z + box.getMax().z) / 2.0  // Milieu Z
+            (box.getMin().x + box.getMax().x) / 2.0,
+            box.getMin().y,
+            (box.getMin().z + box.getMax().z) / 2.0
         );
     }
 }

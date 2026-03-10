@@ -10,23 +10,23 @@ Group {
     }
 
     Label #ScoreBleu {
-        Text: "Bleus: 0";
+        Text: "Reliques: 0/2";
         Anchor: (Top: 30, Left: 10);
     }
 
     Label #ScoreRouge {
-        Text: "Rouges: 0";
-        Anchor: (Top: 55, Left: 10);
+        Text: "";
+        Anchor: (Top: 50, Left: 10);
     }
 
     Label #RelicB {
-        Text: "B1: Base   B2: Base";
-        Anchor: (Top: 85, Left: 10);
+        Text: "Relique 1: Base";
+        Anchor: (Top: 75, Left: 10);
     }
 
     Label #RelicR {
-        Text: "R1: Base   R2: Base";
-        Anchor: (Top: 110, Left: 10);
+        Text: "Relique 2: Base";
+        Anchor: (Top: 100, Left: 10);
     }
 
     Label #PlayerCount {

@@ -9,8 +9,8 @@ import com.hypixel.hytale.server.core.Message;
 import java.awt.Color;
 
 /**
- * Scoreboard dynamique utilisant le format .ui natif.
- * Utilise l'API Message d'Hytale pour les couleurs (pas les codes §).
+ * Scoreboard HUD pour le mode Attaquants vs Défenseurs.
+ * Affiche les reliques capturées (X/2) et l'état de chaque relique.
  */
 public class ExperienceScoreboard extends CustomUIHud {
 
@@ -23,13 +23,12 @@ public class ExperienceScoreboard extends CustomUIHud {
 
     @Override
     protected void build(UICommandBuilder builder) {
-        // On charge uniquement le template : les set() ne peuvent PAS être appelés ici
         builder.append("scoreboard.ui");
     }
 
     /**
-     * Met à jour les données du scoreboard.
-     * Appelé depuis ScoreboardHUD.rafraichirTous() après chaque événement de jeu.
+     * Met à jour le scoreboard avec les données actuelles.
+     * Appelé depuis ScoreboardHUD.rafraichirTous().
      */
     public void rafraichir() {
         UICommandBuilder builder = new UICommandBuilder();
@@ -41,25 +40,39 @@ public class ExperienceScoreboard extends CustomUIHud {
         RelicManager rm = gameManager.getRelicManager();
         if (rm == null) return;
 
-        // Scores avec couleurs via l'API Message
-        builder.set("#ScoreBleu.TextSpans", Message.raw("Bleus: " + rm.getScoreBleu()).color(new Color(0, 200, 255)));
-        builder.set("#ScoreRouge.TextSpans", Message.raw("Rouges: " + rm.getScoreRouge()).color(new Color(255, 80, 80)));
+        int capturees = rm.getRelicsCapturees();
 
-        // Statut des reliques — 2 lignes séparées pour éviter le débordement
+        // Score principal : reliques capturées
+        builder.set("#ScoreBleu.TextSpans", Message.join(
+            Message.raw("Reliques: ").color(Color.WHITE),
+            Message.raw(capturees + "/2").color(capturees == 0 ? Color.LIGHT_GRAY : new Color(255, 160, 0))
+        ));
+
+        // On masque le score rouge (plus utilisé)
+        builder.set("#ScoreRouge.TextSpans", Message.raw(""));
+
+        // Statut Relique 1
         builder.set("#RelicB.TextSpans", Message.join(
-            Message.raw("B1: ").color(new Color(0, 200, 255)),
-            Message.raw(rm.getRelicB1Status()),
-            Message.raw("   B2: ").color(new Color(0, 200, 255)),
-            Message.raw(rm.getRelicB2Status())
-        ));
-        builder.set("#RelicR.TextSpans", Message.join(
-            Message.raw("R1: ").color(new Color(255, 80, 80)),
-            Message.raw(rm.getRelicR1Status()),
-            Message.raw("   R2: ").color(new Color(255, 80, 80)),
-            Message.raw(rm.getRelicR2Status())
+            Message.raw("Relique 1: ").color(new Color(255, 160, 0)),
+            Message.raw(rm.getRelicB1Status()).color(statusColor(rm.getRelicB1Status()))
         ));
 
-        // Compteur joueurs
+        // Statut Relique 2
+        builder.set("#RelicR.TextSpans", Message.join(
+            Message.raw("Relique 2: ").color(new Color(255, 160, 0)),
+            Message.raw(rm.getRelicB2Status()).color(statusColor(rm.getRelicB2Status()))
+        ));
+
+        // Compteur de joueurs
         builder.set("#PlayerCount.TextSpans", Message.raw("Joueurs: " + gameManager.getScoreboardHUD().getActiveCount()).color(Color.LIGHT_GRAY));
+    }
+
+    private Color statusColor(String status) {
+        switch (status) {
+            case "Base": return new Color(0, 200, 100);       // Vert = sécurisée
+            case "Volée": return new Color(255, 80, 80);      // Rouge = en danger
+            case "Capturée": return new Color(255, 160, 0);   // Orange = perdue
+            default: return Color.LIGHT_GRAY;
+        }
     }
 }
