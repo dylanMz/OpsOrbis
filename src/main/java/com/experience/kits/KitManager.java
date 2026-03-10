@@ -12,8 +12,9 @@ public class KitManager {
 
     public enum KitType {
         GUERRIER("Guerrier"),
+        ASSASSIN("Assassin"),
         ARCHER("Archer"),
-        MAGE("Mage");
+        ARBALETRIER("Arbalétrier");
 
         private final String nom;
 
@@ -54,25 +55,32 @@ public class KitManager {
             case GUERRIER:
                 donnerKitGuerrier(inventaire);
                 break;
+            case ASSASSIN:
+                donnerKitAssassin(inventaire);
+                break;
             case ARCHER:
                 donnerKitArcher(inventaire);
                 break;
-            case MAGE:
-                donnerKitMage(inventaire);
+            case ARBALETRIER:
+                donnerKitArbaletrier(inventaire);
                 break;
         }
         joueur.sendMessage(Message.raw("Votre équipement a été distribué !").color(Color.GREEN));
     }
 
     private void donnerKitGuerrier(Inventory inventaire) {
-        // TODO: Ajouter équipement réel
+        // TODO: Ajouter équipement réel (épée lourde, armure lourde, etc.)
+    }
+
+    private void donnerKitAssassin(Inventory inventaire) {
+        // TODO: Ajouter équipement réel (dagues, armure légère, etc.)
     }
 
     private void donnerKitArcher(Inventory inventaire) {
-        // TODO: Ajouter équipement réel
+        // TODO: Ajouter équipement réel (arc, flèches, armure légère, etc.)
     }
 
-    private void donnerKitMage(Inventory inventaire) {
-        // TODO: Ajouter équipement réel
+    private void donnerKitArbaletrier(Inventory inventaire) {
+        // TODO: Ajouter équipement réel (arbalète, carreaux, armure moyenne, etc.)
     }
 }

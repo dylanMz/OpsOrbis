@@ -4,6 +4,7 @@ import com.experience.ExperienceMod;
 import com.experience.config.GameConfig;
 import com.experience.game.logic.GameManager;
 import com.experience.kits.KitManager;
+import com.experience.roles.RolesManager;
 import com.hypixel.hytale.math.shape.Box;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.Message;
@@ -38,7 +39,7 @@ public class GameCommand extends CommandBase {
         String[] args = input.trim().split("\\s+");
 
         if (args.length < 2) {
-            joueur.sendMessage(Message.raw("Usage: /game <join|kit|start|config>").color(Color.RED));
+            joueur.sendMessage(Message.raw("Usage: /game <join|role|kit|start|config>").color(Color.RED));
             return;
         }
 
@@ -47,6 +48,9 @@ public class GameCommand extends CommandBase {
         switch (subCommand) {
             case "join":
                 gameManager.getTeamManager().ajouterJoueur(joueur);
+                break;
+            case "role":
+                handleRoleCommand(joueur, args);
                 break;
             case "kit":
                 handleKitCommand(joueur, args);
@@ -63,13 +67,41 @@ public class GameCommand extends CommandBase {
         }
     }
 
+    private void handleRoleCommand(Player joueur, String[] args) {
+        if (args.length < 3) {
+            joueur.sendMessage(Message.raw("Usage: /game role <melee|distance>").color(Color.RED));
+            return;
+        }
+        try {
+            RolesManager.RoleType role = RolesManager.RoleType.valueOf(args[2].toUpperCase());
+            gameManager.getRolesManager().choisirRole(joueur, role);
+        } catch (IllegalArgumentException e) {
+            joueur.sendMessage(Message.raw("Rôle invalide. Choisissez : melee ou distance").color(Color.RED));
+        }
+    }
+
     private void handleKitCommand(Player joueur, String[] args) {
         if (args.length < 3) {
-            joueur.sendMessage(Message.raw("Usage: /game kit <guerrier|archer|mage>").color(Color.RED));
+            joueur.sendMessage(Message.raw("Usage: /game kit <guerrier|assassin|archer|arbaletrier>").color(Color.RED));
             return;
         }
         try {
             KitManager.KitType kit = KitManager.KitType.valueOf(args[2].toUpperCase());
+
+            // Vérifier que le kit est compatible avec le rôle du joueur
+            if (!gameManager.getRolesManager().peutUtiliserKit(joueur, kit)) {
+                RolesManager.RoleType roleActuel = gameManager.getRolesManager().getRole(joueur);
+                joueur.sendMessage(Message.join(
+                    Message.raw("Le kit ").color(Color.RED),
+                    Message.raw(kit.getNom()).color(Color.ORANGE),
+                    Message.raw(" n'est pas disponible pour le rôle ").color(Color.RED),
+                    Message.raw(roleActuel.getNom()).color(Color.ORANGE),
+                    Message.raw(". Changez de rôle avec ").color(Color.RED),
+                    Message.raw("/game role <melee|distance>").color(Color.YELLOW)
+                ));
+                return;
+            }
+
             gameManager.getKitManager().choisirKit(joueur, kit);
         } catch (IllegalArgumentException e) {
             joueur.sendMessage(Message.raw("Kit invalide.").color(Color.RED));

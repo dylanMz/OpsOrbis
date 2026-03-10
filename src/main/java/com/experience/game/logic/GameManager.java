@@ -2,6 +2,7 @@ package com.experience.game.logic;
 
 import com.experience.ExperienceMod;
 import com.experience.kits.KitManager;
+import com.experience.roles.RolesManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -30,6 +31,7 @@ public class GameManager {
     private GameState etatActuel;
     private final TeamManager teamManager;
     private final KitManager kitManager;
+    private final RolesManager rolesManager;
     private NPCManager npcManager;
     private RelicManager relicManager;
     private final ScoreboardHUD scoreboardHUD;
@@ -40,6 +42,7 @@ public class GameManager {
         this.etatActuel = GameState.ATTENTE;
         this.teamManager = new TeamManager();
         this.kitManager = new KitManager();
+        this.rolesManager = new RolesManager();
         this.scoreboardHUD = new ScoreboardHUD(this);
     }
 
@@ -118,6 +121,7 @@ public class GameManager {
     public GameState getEtatActuel() { return etatActuel; }
     public TeamManager getTeamManager() { return teamManager; }
     public KitManager getKitManager() { return kitManager; }
+    public RolesManager getRolesManager() { return rolesManager; }
     public NPCManager getNpcManager() { return npcManager; }
     public RelicManager getRelicManager() { return relicManager; }
     public ScoreboardHUD getScoreboardHUD() { return scoreboardHUD; }
