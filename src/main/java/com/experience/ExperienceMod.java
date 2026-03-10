@@ -47,12 +47,12 @@ public class ExperienceMod extends JavaPlugin {
         getCommandRegistry().registerCommand(new GameCommand(gameManager));
 
         // 4. Enregistrement des systèmes ECS (Dommages, Pickups, Dépôts)
-        getEntityStoreRegistry().registerSystem(new FriendlyFireSystem(gameManager), true);
-        getEntityStoreRegistry().registerSystem(new PlayerFriendlyFireSystem(gameManager), true);
-        getEntityStoreRegistry().registerSystem(new RelicPickupSystem(gameManager), true);
-        getEntityStoreRegistry().registerSystem(new RelicDepositSystem(gameManager), true);
-        getEntityStoreRegistry().registerSystem(new RelicDeathSystem(gameManager), true);
-        getEntityStoreRegistry().registerSystem(new PlayerRespawnSystem(gameManager), true);
+        getEntityStoreRegistry().registerSystem(new FriendlyFireSystem(gameManager));
+        getEntityStoreRegistry().registerSystem(new PlayerFriendlyFireSystem(gameManager));
+        getEntityStoreRegistry().registerSystem(new RelicPickupSystem(gameManager));
+        getEntityStoreRegistry().registerSystem(new RelicDepositSystem(gameManager));
+        getEntityStoreRegistry().registerSystem(new RelicDeathSystem(gameManager));
+        getEntityStoreRegistry().registerSystem(new PlayerRespawnSystem(gameManager));
 
         // 5. Enregistrement des évènements (Scoreboard auto-show/hide)
         getEventRegistry().register(PlayerConnectEvent.class, event -> {
