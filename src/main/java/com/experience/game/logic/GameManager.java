@@ -14,6 +14,7 @@ import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.experience.game.ui.ScoreboardHUD;
 
 public class GameManager {
 
@@ -31,6 +32,7 @@ public class GameManager {
     private final KitManager kitManager;
     private NPCManager npcManager;
     private RelicManager relicManager;
+    private final ScoreboardHUD scoreboardHUD;
     private final ExperienceMod plugin;
 
     public GameManager(ExperienceMod plugin) {
@@ -38,6 +40,7 @@ public class GameManager {
         this.etatActuel = GameState.ATTENTE;
         this.teamManager = new TeamManager();
         this.kitManager = new KitManager();
+        this.scoreboardHUD = new ScoreboardHUD(this);
     }
 
     /**
@@ -68,7 +71,21 @@ public class GameManager {
             kitManager.donnerEquipement(joueur);
         }
 
-        HytaleUtils.diffuserMessage(monde, Message.raw("La partie commence ! Défendez votre PNJ !").color(Color.GREEN));
+        // Affichage du scoreboard pour les joueurs présents (via ECS Store)
+        monde.execute(() -> {
+            Store<EntityStore> store = monde.getEntityStore().getStore();
+            Query<EntityStore> playerQuery = Archetype.of(Player.getComponentType());
+            store.forEachChunk(playerQuery, (chunk, buffer) -> {
+                for (int i = 0; i < chunk.size(); i++) {
+                    Player p = chunk.getComponent(i, Player.getComponentType());
+                    if (p != null) {
+                        scoreboardHUD.afficher(p);
+                    }
+                }
+            });
+        });
+
+        HytaleUtils.diffuserMessage(monde, Message.raw("La partie commence ! Défendez votre PNJ et capturez les reliques !").color(Color.GREEN));
     }
 
     /**
@@ -103,4 +120,5 @@ public class GameManager {
     public KitManager getKitManager() { return kitManager; }
     public NPCManager getNpcManager() { return npcManager; }
     public RelicManager getRelicManager() { return relicManager; }
+    public ScoreboardHUD getScoreboardHUD() { return scoreboardHUD; }
 }

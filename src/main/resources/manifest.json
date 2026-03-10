@@ -12,5 +12,5 @@
     }
   ],
   "Dependencies": {},
-  "IncludesAssetPack": false
+  "IncludesAssetPack": true
 }

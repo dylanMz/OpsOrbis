@@ -11,6 +11,8 @@ import com.experience.game.systems.RelicDeathSystem;
 import com.experience.game.systems.PlayerRespawnSystem;
 import com.experience.commands.GameCommand;
 import com.experience.config.ConfigManager;
+import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
+import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import java.util.logging.Level;
 
 /**
@@ -51,6 +53,19 @@ public class ExperienceMod extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new RelicDepositSystem(gameManager), true);
         getEntityStoreRegistry().registerSystem(new RelicDeathSystem(gameManager), true);
         getEntityStoreRegistry().registerSystem(new PlayerRespawnSystem(gameManager), true);
+
+        // 5. Enregistrement des évènements (Scoreboard auto-show/hide)
+        getEventRegistry().register(PlayerConnectEvent.class, event -> {
+            if (gameManager.getEtatActuel() == GameManager.GameState.EN_COURS && event.getPlayer() != null) {
+                gameManager.getScoreboardHUD().afficher(event.getPlayer());
+            }
+        });
+
+        getEventRegistry().register(PlayerDisconnectEvent.class, event -> {
+            // Pas besoin du HUD manager ici car le joueur quitte, 
+            // on retire juste de notre map interne pour éviter les fuites.
+            gameManager.getScoreboardHUD().masquer(event.getPlayerRef(), null);
+        });
         
         getLogger().at(Level.INFO).log("Initialisation des systèmes et commandes terminée.");
     }

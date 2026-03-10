@@ -172,6 +172,9 @@ public class RelicManager {
         // Mettre la relique dans l'inventaire du joueur
         Store<EntityStore> sStore = monde.getEntityStore().getStore();
         joueur.giveItem(new ItemStack("Bench_Memories", 1), joueur.getReference(), sStore);
+
+        // Mise à jour du scoreboard pour tout le monde
+        ExperienceMod.get().getGameManager().getScoreboardHUD().rafraichirTous();
     }
 
     /**
@@ -196,6 +199,9 @@ public class RelicManager {
                 if (joueur == carrierRedRelic1) carrierRedRelic1 = null;
                 else carrierRedRelic2 = null;
 
+                // Mise à jour du scoreboard suite au point marqué
+                ExperienceMod.get().getGameManager().getScoreboardHUD().rafraichirTous();
+
                 verifierVictoire(monde, buffer);
             }
         }
@@ -214,6 +220,9 @@ public class RelicManager {
 
                 if (joueur == carrierBlueRelic1) carrierBlueRelic1 = null;
                 else carrierBlueRelic2 = null;
+
+                // Mise à jour du scoreboard suite au point marqué
+                ExperienceMod.get().getGameManager().getScoreboardHUD().rafraichirTous();
 
                 verifierVictoire(monde, buffer);
             }
@@ -256,6 +265,9 @@ public class RelicManager {
             monde.execute(() -> spawnRelic(monde.getEntityStore().getStore(), config.getRedRelic2(), false, 2));
         }
         
+        // Mise à jour du scoreboard car une relique est retournée à la base
+        ExperienceMod.get().getGameManager().getScoreboardHUD().rafraichirTous();
+        
         // Retirer la relique de l'inventaire du joueur mort
         mort.getInventory().getCombinedEverything().removeItemStack(new ItemStack("Bench_Memories", 1));
     }
@@ -285,6 +297,24 @@ public class RelicManager {
     public Player getCarrierBlueRelic2() { return carrierBlueRelic2; }
     public Player getCarrierRedRelic1() { return carrierRedRelic1; }
     public Player getCarrierRedRelic2() { return carrierRedRelic2; }
+
+    public int getScoreBleu() { return scoreBleu; }
+    public int getScoreRouge() { return scoreRouge; }
+
+    /**
+     * Retourne une chaîne formatée représentant l'état des 4 reliques pour le scoreboard.
+     * @return État formaté avec des codes couleurs Hytale.
+     */
+    public String getRelicB1Status() { return formatStatus(blueRelic1Ref, carrierBlueRelic1); }
+    public String getRelicB2Status() { return formatStatus(blueRelic2Ref, carrierBlueRelic2); }
+    public String getRelicR1Status() { return formatStatus(redRelic1Ref, carrierRedRelic1); }
+    public String getRelicR2Status() { return formatStatus(redRelic2Ref, carrierRedRelic2); }
+
+    private String formatStatus(Ref<EntityStore> ref, Player carrier) {
+        if (carrier != null) return "Portée";
+        if (ref != null) return "Base";
+        return "Prise";
+    }
 
     public boolean estReliqueDisponible(boolean isBlue, int number) {
         if (isBlue) {

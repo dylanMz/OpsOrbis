@@ -1,0 +1,36 @@
+@bg = PatchStyle(TexturePath: "bg.png");
+
+Group {
+    Anchor: (Top: 380, Right: 20, Width: 200, Height: 175);
+    Background: @bg;
+
+    Label {
+        Text: "EXPERIENCE 5v5";
+        Anchor: (Top: 5, Left: 10);
+    }
+
+    Label #ScoreBleu {
+        Text: "Bleus: 0";
+        Anchor: (Top: 30, Left: 10);
+    }
+
+    Label #ScoreRouge {
+        Text: "Rouges: 0";
+        Anchor: (Top: 55, Left: 10);
+    }
+
+    Label #RelicB {
+        Text: "B1: Base   B2: Base";
+        Anchor: (Top: 85, Left: 10);
+    }
+
+    Label #RelicR {
+        Text: "R1: Base   R2: Base";
+        Anchor: (Top: 110, Left: 10);
+    }
+
+    Label #PlayerCount {
+        Text: "Joueurs: 0";
+        Anchor: (Top: 145, Left: 10);
+    }
+}
