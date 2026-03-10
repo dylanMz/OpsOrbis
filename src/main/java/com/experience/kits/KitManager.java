@@ -1,6 +1,8 @@
 package com.experience.kits;
 
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import java.awt.Color;
@@ -27,14 +29,14 @@ public class KitManager {
         }
     }
 
-    private final Map<Player, KitType> joueursKits;
+    private final Map<Ref<EntityStore>, KitType> joueursKits;
 
     public KitManager() {
         this.joueursKits = new HashMap<>();
     }
 
     public void choisirKit(Player joueur, KitType kit) {
-        joueursKits.put(joueur, kit);
+        joueursKits.put(joueur.getReference(), kit);
         joueur.sendMessage(Message.join(
             Message.raw("Vous avez sélectionné le kit ").color(Color.WHITE),
             Message.raw(kit.getNom()).color(Color.ORANGE)
@@ -42,7 +44,7 @@ public class KitManager {
     }
 
     public KitType getKit(Player joueur) {
-        return joueursKits.getOrDefault(joueur, KitType.GUERRIER);
+        return joueursKits.getOrDefault(joueur.getReference(), KitType.GUERRIER);
     }
 
     public void donnerEquipement(Player joueur) {

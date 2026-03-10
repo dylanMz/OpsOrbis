@@ -13,13 +13,20 @@ import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.Archetype;
+import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.component.system.tick.ArchetypeTickingSystem;
 
 /**
- * Système ECS qui vérifie si un joueur est à portée d'une relique pour la ramasser.
- * Seules les 2 reliques des défenseurs sont vérifiées (positions RedRelic1 et RedRelic2).
+ * Détecte et gère la proximité entre les joueurs et les reliques.
+ * <p>
+ * Deux cas :
+ *  1. Relique à sa position d'origine  → les attaquants la ramassent.
+ *  2. Relique lâchée sur le terrain     → les attaquants la récupèrent,
+ *                                          les défenseurs la renvoient à la base.
  */
 public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
+
+    private static final double PICKUP_RANGE = 1.5;
 
     private final Query<EntityStore> query;
     private final GameManager gameManager;
@@ -30,9 +37,7 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
     }
 
     @Override
-    public Query<EntityStore> getQuery() {
-        return query;
-    }
+    public Query<EntityStore> getQuery() { return query; }
 
     @Override
     public boolean test(com.hypixel.hytale.component.ComponentRegistry<EntityStore> registry, Archetype<EntityStore> archetype) {
@@ -41,25 +46,55 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
 
     @Override
     public void tick(float delta, ArchetypeChunk<EntityStore> chunk, Store<EntityStore> store, CommandBuffer<EntityStore> buffer) {
-        if (gameManager == null || gameManager.getEtatActuel() != GameManager.GameState.EN_COURS || gameManager.getRelicManager() == null) return;
+        if (gameManager == null || gameManager.getEtatActuel() != GameManager.GameState.EN_COURS) return;
+        RelicManager rm = gameManager.getRelicManager();
+        if (rm == null) return;
+
         GameConfig config = ExperienceMod.get().getConfigManager().getConfig();
-        RelicManager relicManager = gameManager.getRelicManager();
 
         for (int i = 0; i < chunk.size(); i++) {
+            // Si le joueur est mort, il ne peut pas ramasser d'objet
+            if (chunk.getComponent(i, DeathComponent.getComponentType()) != null) continue;
+
             Player joueur = chunk.getComponent(i, Player.getComponentType());
             TransformComponent transform = chunk.getComponent(i, TransformComponent.getComponentType());
             if (joueur == null || transform == null) continue;
+            
+            Player c1 = rm.getCarrierRelic1();
+            Player c2 = rm.getCarrierRelic2();
+            if ((c1 != null && java.util.Objects.equals(joueur.getReference(), c1.getReference())) || 
+                (c2 != null && java.util.Objects.equals(joueur.getReference(), c2.getReference()))) {
+                continue;
+            }
 
             Vector3d pos = transform.getPosition();
-            double pRange = 1.5;
 
-            // Seules les 2 reliques des défenseurs (positions RedRelic1 et RedRelic2)
-            if (config.getRedRelic1() != null && relicManager.estReliqueDisponible(false, 1)
-                    && relicManager.getCarrierRelic1() == null && pos.distanceTo(config.getRedRelic1()) <= pRange) {
-                relicManager.ramasserRelique(joueur, 1, buffer);
-            } else if (config.getRedRelic2() != null && relicManager.estReliqueDisponible(false, 2)
-                    && relicManager.getCarrierRelic2() == null && pos.distanceTo(config.getRedRelic2()) <= pRange) {
-                relicManager.ramasserRelique(joueur, 2, buffer);
+            // ── Relique 1 ──────────────────────────────────────────────────────
+            Vector3d positionLachee1 = rm.getRelic1DroppedPos();
+            Vector3d positionOrigine1 = config.getRelic1();
+
+            if (positionLachee1 != null) {
+                // Relique lâchée sur le terrain — quiconque passe dessus interagit
+                if (pos.distanceTo(positionLachee1) <= PICKUP_RANGE) {
+                    rm.ramasserRelique(joueur, 1, buffer);
+                    continue;
+                }
+            } else if (rm.estReliqueDisponible(false, 1) && positionOrigine1 != null && pos.distanceTo(positionOrigine1) <= PICKUP_RANGE) {
+                // Relique à sa base — seuls les attaquants peuvent la voler
+                rm.ramasserRelique(joueur, 1, buffer);
+                continue;
+            }
+
+            // ── Relique 2 ──────────────────────────────────────────────────────
+            Vector3d positionLachee2 = rm.getRelic2DroppedPos();
+            Vector3d positionOrigine2 = config.getRelic2();
+
+            if (positionLachee2 != null) {
+                if (pos.distanceTo(positionLachee2) <= PICKUP_RANGE) {
+                    rm.ramasserRelique(joueur, 2, buffer);
+                }
+            } else if (rm.estReliqueDisponible(false, 2) && positionOrigine2 != null && pos.distanceTo(positionOrigine2) <= PICKUP_RANGE) {
+                rm.ramasserRelique(joueur, 2, buffer);
             }
         }
     }

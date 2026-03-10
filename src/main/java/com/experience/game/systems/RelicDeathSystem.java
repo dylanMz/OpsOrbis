@@ -37,11 +37,8 @@ public class RelicDeathSystem extends DeathSystems.OnDeathSystem {
         
         // On n'agit que si le joueur est valide et que la partie est active
         if (joueur != null && gameManager.getEtatActuel() == GameManager.GameState.EN_COURS) {
-            
-            // Vérification si le joueur portait une relique au moment de sa mort
             if (gameManager.getRelicManager() != null) {
-                // Le manager se chargera de réinitialiser le porteur et de faire respawner la relique
-                gameManager.getRelicManager().gererMortDuPorteur(joueur);
+                gameManager.getRelicManager().gererMortDuPorteur(joueur, store, buffer);
             }
         }
     }

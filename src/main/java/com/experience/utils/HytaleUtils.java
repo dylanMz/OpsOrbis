@@ -12,7 +12,6 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.logger.HytaleLogger;
 import java.util.logging.Level;
-import java.awt.Color;
 
 /**
  * Utilitaires globaux pour simplifier les interactions avec l'API Hytale.
@@ -42,7 +41,12 @@ public class HytaleUtils {
                 }
             });
         });
-        HytaleLogger.getLogger().at(Level.INFO).log("[ExperienceMod] " + message.getRawText());
+        
+        String texte = message.getRawText();
+        if (texte == null || texte.trim().isEmpty()) {
+            texte = "Message composé (voir en jeu)";
+        }
+        HytaleLogger.getLogger().at(Level.INFO).log("[ExperienceMod] " + texte);
     }
 
     /**

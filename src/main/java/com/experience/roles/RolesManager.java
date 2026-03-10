@@ -2,6 +2,8 @@ package com.experience.roles;
 
 import com.experience.kits.KitManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.Message;
 import java.awt.Color;
 
@@ -49,7 +51,7 @@ public class RolesManager {
         ));
     }
 
-    private final Map<Player, RoleType> joueursRoles;
+    private final Map<Ref<EntityStore>, RoleType> joueursRoles;
 
     public RolesManager() {
         this.joueursRoles = new HashMap<>();
@@ -61,7 +63,7 @@ public class RolesManager {
      * @param role Le rôle sélectionné.
      */
     public void choisirRole(Player joueur, RoleType role) {
-        joueursRoles.put(joueur, role);
+        joueursRoles.put(joueur.getReference(), role);
 
         // Message de confirmation
         joueur.sendMessage(Message.join(
@@ -92,7 +94,7 @@ public class RolesManager {
      * @return Le rôle du joueur.
      */
     public RoleType getRole(Player joueur) {
-        return joueursRoles.getOrDefault(joueur, RoleType.MELEE);
+        return joueursRoles.getOrDefault(joueur.getReference(), RoleType.MELEE);
     }
 
     /**
@@ -122,6 +124,6 @@ public class RolesManager {
      * @return true si le joueur a un rôle assigné.
      */
     public boolean aChoisiRole(Player joueur) {
-        return joueursRoles.containsKey(joueur);
+        return joueursRoles.containsKey(joueur.getReference());
     }
 }

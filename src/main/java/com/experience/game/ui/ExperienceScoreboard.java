@@ -69,10 +69,11 @@ public class ExperienceScoreboard extends CustomUIHud {
 
     private Color statusColor(String status) {
         switch (status) {
-            case "Base": return new Color(0, 200, 100);       // Vert = sécurisée
-            case "Volée": return new Color(255, 80, 80);      // Rouge = en danger
-            case "Capturée": return new Color(255, 160, 0);   // Orange = perdue
-            default: return Color.LIGHT_GRAY;
+            case "Base":     return new Color(0, 200, 100);  // Vert  = sécurisée
+            case "Terrain":  return new Color(255, 220, 0);  // Jaune = lâchée au sol
+            case "Volée":    return new Color(255, 80, 80);  // Rouge = portée par un attaquant
+            case "Capturée": return new Color(255, 160, 0);  // Orange = perdue
+            default:         return Color.LIGHT_GRAY;
         }
     }
 }

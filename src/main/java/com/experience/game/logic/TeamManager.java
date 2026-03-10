@@ -5,7 +5,6 @@ import com.experience.config.GameConfig;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.math.vector.Vector3d;
-import com.hypixel.hytale.server.core.universe.world.World;
 import com.experience.utils.HytaleUtils;
 import java.awt.Color;
 import java.util.ArrayList;
@@ -31,7 +30,7 @@ public class TeamManager {
      * @param joueur Le joueur à intégrer.
      */
     public void ajouterJoueur(Player joueur) {
-        if (equipeAttaquants.contains(joueur) || equipeDefenseurs.contains(joueur)) return;
+        if (contientJoueur(equipeAttaquants, joueur) || contientJoueur(equipeDefenseurs, joueur)) return;
 
         GameConfig config = ExperienceMod.get().getConfigManager().getConfig();
 
@@ -60,8 +59,9 @@ public class TeamManager {
      * @param joueur Le joueur à retirer.
      */
     public void retirerJoueur(Player joueur) {
-        equipeAttaquants.remove(joueur);
-        equipeDefenseurs.remove(joueur);
+        if (joueur == null || joueur.getReference() == null) return;
+        equipeAttaquants.removeIf(p -> p != null && java.util.Objects.equals(p.getReference(), joueur.getReference()));
+        equipeDefenseurs.removeIf(p -> p != null && java.util.Objects.equals(p.getReference(), joueur.getReference()));
     }
 
     /**
@@ -70,9 +70,9 @@ public class TeamManager {
      */
     public void teleporterAuSpawn(Player joueur) {
         GameConfig config = ExperienceMod.get().getConfigManager().getConfig();
-        if (equipeAttaquants.contains(joueur)) {
+        if (contientJoueur(equipeAttaquants, joueur)) {
             teleporterJoueur(joueur, config.getBoxCenter(config.getBlueZone()));
-        } else if (equipeDefenseurs.contains(joueur)) {
+        } else if (contientJoueur(equipeDefenseurs, joueur)) {
             teleporterJoueur(joueur, config.getBoxCenter(config.getRedZone()));
         }
     }
@@ -87,8 +87,8 @@ public class TeamManager {
      * @param equipe "Attaquant" ou "Defenseur"
      */
     public boolean estDansEquipe(Player joueur, String equipe) {
-        if ("Attaquant".equalsIgnoreCase(equipe)) return equipeAttaquants.contains(joueur);
-        if ("Defenseur".equalsIgnoreCase(equipe)) return equipeDefenseurs.contains(joueur);
+        if ("Attaquant".equalsIgnoreCase(equipe)) return contientJoueur(equipeAttaquants, joueur);
+        if ("Defenseur".equalsIgnoreCase(equipe)) return contientJoueur(equipeDefenseurs, joueur);
         return false;
     }
 
@@ -96,8 +96,8 @@ public class TeamManager {
      * Vérifie si deux joueurs sont dans la même équipe.
      */
     public boolean sontDansLaMemeEquipe(Player joueur1, Player joueur2) {
-        if (equipeAttaquants.contains(joueur1) && equipeAttaquants.contains(joueur2)) return true;
-        if (equipeDefenseurs.contains(joueur1) && equipeDefenseurs.contains(joueur2)) return true;
+        if (contientJoueur(equipeAttaquants, joueur1) && contientJoueur(equipeAttaquants, joueur2)) return true;
+        if (contientJoueur(equipeDefenseurs, joueur1) && contientJoueur(equipeDefenseurs, joueur2)) return true;
         return false;
     }
 
@@ -107,4 +107,15 @@ public class TeamManager {
     // Compatibilité avec l'ancien code (pour éviter les erreurs de compilation)
     public List<Player> getEquipeBleue() { return equipeAttaquants; }
     public List<Player> getEquipeRouge() { return equipeDefenseurs; }
+
+    /**
+     * Vérifie de manière robuste si un joueur est dans une liste.
+     */
+    private boolean contientJoueur(List<Player> equipe, Player joueur) {
+        if (joueur == null) return false;
+        for (Player p : equipe) {
+            if (java.util.Objects.equals(p.getReference(), joueur.getReference())) return true;
+        }
+        return false;
+    }
 }

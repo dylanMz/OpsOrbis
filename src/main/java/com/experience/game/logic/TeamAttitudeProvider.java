@@ -27,19 +27,19 @@ public class TeamAttitudeProvider implements IAttitudeProvider {
     @Override
     public Attitude getAttitude(Ref<EntityStore> npcRef, Role role, Ref<EntityStore> targetRef, ComponentAccessor<EntityStore> accessor) {
         // Vérifier que c'est bien un de nos PNJs
-        boolean isKnownNpc = npcManager.estPnjBleu(npcRef) || npcManager.estPnjRouge(npcRef);
-        if (!isKnownNpc) return null;
+        boolean estPnjConnu = npcManager.estPnjBleu(npcRef) || npcManager.estPnjRouge(npcRef);
+        if (!estPnjConnu) return null;
 
         // Vérifier si la cible est un joueur
         if (targetRef != null && accessor != null) {
-            Player targetPlayer = accessor.getComponent(targetRef, Player.getComponentType());
-            if (targetPlayer != null) {
+            Player joueurCible = accessor.getComponent(targetRef, Player.getComponentType());
+            if (joueurCible != null) {
                 // Les PNJs protègent les défenseurs → amicaux
-                if (teamManager.estDansEquipe(targetPlayer, "Defenseur")) {
+                if (teamManager.estDansEquipe(joueurCible, "Defenseur")) {
                     return Attitude.FRIENDLY;
                 }
                 // Les PNJs attaquent les attaquants → hostiles
-                if (teamManager.estDansEquipe(targetPlayer, "Attaquant")) {
+                if (teamManager.estDansEquipe(joueurCible, "Attaquant")) {
                     return Attitude.HOSTILE;
                 }
             }
