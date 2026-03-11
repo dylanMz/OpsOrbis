@@ -25,11 +25,11 @@ jobs:
 
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '9.3.1'
 
     - name: Build Mod with Gradle
-      run: |
-        chmod +x gradlew
-        ./gradlew build
+      run: gradle build
 
     - name: Extract Branch Name
       shell: bash
