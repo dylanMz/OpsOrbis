@@ -1,7 +1,7 @@
 @bg = PatchStyle(TexturePath: "bg.png");
 
 Group {
-    Anchor: (Top: 380, Right: 20, Width: 200, Height: 175);
+    Anchor: (Top: 300, Right: 20, Width: 240, Height: 220);
     Background: @bg;
 
     Label {
@@ -11,26 +11,26 @@ Group {
 
     Label #ScoreBleu {
         Text: "Reliques: 0/2";
-        Anchor: (Top: 30, Left: 10);
+        Anchor: (Top: 40, Left: 10);
     }
 
     Label #ScoreRouge {
         Text: "";
-        Anchor: (Top: 50, Left: 10);
+        Anchor: (Top: 75, Left: 10);
     }
 
     Label #RelicB {
         Text: "Relique 1: Base";
-        Anchor: (Top: 75, Left: 10);
+        Anchor: (Top: 115, Left: 10);
     }
 
     Label #RelicR {
         Text: "Relique 2: Base";
-        Anchor: (Top: 100, Left: 10);
+        Anchor: (Top: 155, Left: 10);
     }
 
     Label #PlayerCount {
         Text: "Joueurs: 0";
-        Anchor: (Top: 145, Left: 10);
+        Anchor: (Top: 180, Left: 10);
     }
 }

@@ -9,6 +9,7 @@ import com.experience.game.systems.RelicPickupSystem;
 import com.experience.game.systems.RelicDepositSystem;
 import com.experience.game.systems.RelicDeathSystem;
 import com.experience.game.systems.PlayerRespawnSystem;
+import com.experience.game.systems.MatchTimerSystem;
 import com.experience.commands.GameCommand;
 import com.experience.config.ConfigManager;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
@@ -53,6 +54,7 @@ public class ExperienceMod extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new RelicDepositSystem(gameManager));
         getEntityStoreRegistry().registerSystem(new RelicDeathSystem(gameManager));
         getEntityStoreRegistry().registerSystem(new PlayerRespawnSystem(gameManager));
+        getEntityStoreRegistry().registerSystem(new MatchTimerSystem(gameManager));
 
         // 5. Enregistrement des évènements (Scoreboard auto-show/hide)
         getEventRegistry().register(PlayerConnectEvent.class, event -> {
