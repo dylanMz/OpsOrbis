@@ -55,6 +55,16 @@ jobs:
           echo "is_prerelease=true" >> $GITHUB_OUTPUT
         fi
 
+    - name: Rename JAR file
+      shell: bash
+      run: |
+        TAG=${{ steps.set_tag.outputs.tag_name }}
+        # Renomme le premier fichier .jar trouvé dans build/libs
+        for file in build/libs/*.jar; do
+          mv "$file" "build/libs/ExperienceMod-${TAG}.jar"
+          break
+        done
+
     - name: Upload Release to GitHub
       uses: softprops/action-gh-release@v2
       with:
