@@ -46,10 +46,13 @@ jobs:
         DATE=$(date +'%Y.%m.%d')
         BRANCH=${{ steps.extract_branch.outputs.branch }}
         
-        # Generation du tag (ex: v2026.03.11-alpha-a1b2c3d)
-        if [ "$BRANCH" = "prod" ] || [ "$BRANCH" = "main" ]; then
+        # Generation du tag selon la branche
+        if [ "$BRANCH" = "prod" ]; then
           echo "tag_name=v${DATE}-prod-${COMMIT_SHORT}" >> $GITHUB_OUTPUT
           echo "is_prerelease=false" >> $GITHUB_OUTPUT
+        elif [ "$BRANCH" = "main" ]; then
+          echo "tag_name=v${DATE}-dev-${COMMIT_SHORT}" >> $GITHUB_OUTPUT
+          echo "is_prerelease=true" >> $GITHUB_OUTPUT
         else
           echo "tag_name=v${DATE}-${BRANCH}-${COMMIT_SHORT}" >> $GITHUB_OUTPUT
           echo "is_prerelease=true" >> $GITHUB_OUTPUT
