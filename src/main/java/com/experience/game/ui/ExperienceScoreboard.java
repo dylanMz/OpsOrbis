@@ -15,6 +15,7 @@ import java.awt.Color;
 public class ExperienceScoreboard extends CustomUIHud {
 
     private final GameManager gameManager;
+    private boolean visible = true;
 
     public ExperienceScoreboard(PlayerRef playerRef, GameManager gameManager) {
         super(playerRef);
@@ -27,12 +28,23 @@ public class ExperienceScoreboard extends CustomUIHud {
     }
 
     /**
+     * Définit si le scoreboard doit être affiché ou masqué.
+     */
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+        rafraichir();
+    }
+
+    /**
      * Met à jour le scoreboard avec les données actuelles.
      * Appelé depuis ScoreboardHUD.rafraichirTous().
      */
     public void rafraichir() {
         UICommandBuilder builder = new UICommandBuilder();
-        injecterDonnees(builder);
+        builder.set("#MainGroup.Visible", visible);
+        if (visible) {
+            injecterDonnees(builder);
+        }
         this.update(false, builder);
     }
 

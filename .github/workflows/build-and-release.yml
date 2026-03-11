@@ -42,21 +42,43 @@ jobs:
       id: set_tag
       shell: bash
       run: |
-        COMMIT_SHORT=$(git rev-parse --short HEAD)
+        git fetch --tags
         DATE=$(date +'%Y.%m.%d')
         BRANCH=${{ steps.extract_branch.outputs.branch }}
         
-        # Generation du tag selon la branche
         if [ "$BRANCH" = "prod" ]; then
-          echo "tag_name=v${DATE}-prod-${COMMIT_SHORT}" >> $GITHUB_OUTPUT
-          echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          PREFIX="v${DATE}."
+          IS_PRERELEASE="false"
+        elif [ "$BRANCH" = "alpha" ]; then
+          PREFIX="v${DATE}-pre-release."
+          IS_PRERELEASE="true"
         elif [ "$BRANCH" = "main" ]; then
-          echo "tag_name=v${DATE}-dev-${COMMIT_SHORT}" >> $GITHUB_OUTPUT
-          echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          PREFIX="v${DATE}-dev."
+          IS_PRERELEASE="true"
         else
-          echo "tag_name=v${DATE}-${BRANCH}-${COMMIT_SHORT}" >> $GITHUB_OUTPUT
-          echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          PREFIX="v${DATE}-${BRANCH}."
+          IS_PRERELEASE="true"
         fi
+
+        # Trouver le dernier tag commençant par ce préfixe pour aujourd'hui
+        LAST_TAG=$(git tag -l "${PREFIX}*" --sort=-v:refname | head -n 1)
+
+        if [ -z "$LAST_TAG" ]; then
+          NEW_TAG="${PREFIX}1"
+        else
+          # Extraire le numéro après le préfixe
+          INDEX=$(echo "$LAST_TAG" | sed "s/^${PREFIX}//")
+          # Vérifier si c'est bien un nombre
+          if [[ "$INDEX" =~ ^[0-9]+$ ]]; then
+            NEXT_INDEX=$((INDEX + 1))
+            NEW_TAG="${PREFIX}${NEXT_INDEX}"
+          else
+            NEW_TAG="${PREFIX}1"
+          fi
+        fi
+
+        echo "tag_name=${NEW_TAG}" >> $GITHUB_OUTPUT
+        echo "is_prerelease=${IS_PRERELEASE}" >> $GITHUB_OUTPUT
 
     - name: Rename JAR file
       shell: bash

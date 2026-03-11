@@ -165,4 +165,12 @@ public class TeamManager {
         }
         return false;
     }
+
+    public String getRole(Player player) {
+        return estDansEquipe(player, "Attaquant") ? "Attaquant" : "Defenseur";
+    }
+
+    public boolean isEquipe1Attaquant() {
+        return equipe1EstAttaquant;
+    }
 }

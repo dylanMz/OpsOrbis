@@ -124,6 +124,12 @@ public class GameManager {
 
         HytaleUtils.diffuserMessage(monde, Message.raw("La manche commence ! Attaquants, volez les reliques !").color(Color.GREEN));
         
+        // Annonce visuelle au centre de l'écran
+        diffuserAnnonce(monde, 
+            Message.raw("MANCHE " + roundActuel).color(Color.YELLOW),
+            Message.raw(teamManager.isEquipe1Attaquant() ? "ÉQUIPE 1 : ATTAQUE" : "ÉQUIPE 1 : DÉFENSE").color(Color.WHITE)
+        );
+        
         // Initialisation du chrono
         this.tempsRestantManche = TEMPS_MANCHE_SECONDES;
         this.lastTimeMillis = System.currentTimeMillis();
@@ -203,10 +209,59 @@ public class GameManager {
             Message.raw("Scores - Eq1: " + teamManager.getScoreEquipe1() + " | Eq2: " + teamManager.getScoreEquipe2() + "\n").color(Color.WHITE),
             Message.raw("Gagnant : " + texteVainqueur).color(Color.YELLOW)
         ));
+        
+        // On masque le scoreboard à la fin naturelle du match
+        scoreboardHUD.masquerTous(monde);
+    }
+
+    /**
+     * Force l'arrêt de la partie et nettoie l'environnement.
+     * @param monde Le monde où la partie se déroule.
+     */
+    public void forcerArret(World monde) {
+        if (monde == null) return;
+
+        this.etatActuel = GameState.ATTENTE;
+        HytaleUtils.diffuserMessage(monde, Message.raw("=== LA PARTIE A ÉTÉ ARRÊTÉE PAR UN ADMIN ===").color(Color.RED));
+
+        monde.execute(() -> {
+            // 1. Supprimer PNJ et Reliques (buffer null pour suppression directe)
+            if (npcManager != null) npcManager.supprimerPNJ(null);
+            if (relicManager != null) relicManager.supprimerReliques(null);
+            
+            // 2. Masquer Scoreboard
+            scoreboardHUD.masquerTous(monde);
+
+            // 3. Nettoyer inventaires des joueurs
+            Store<EntityStore> store = monde.getEntityStore().getStore();
+            Query<EntityStore> playerQuery = Archetype.of(Player.getComponentType());
+            store.forEachChunk(playerQuery, (chunk, b) -> {
+                for (int i = 0; i < chunk.size(); i++) {
+                    Player p = chunk.getComponent(i, Player.getComponentType());
+                    if (p != null) {
+                        HytaleUtils.nettoyerInventaireJeu(p);
+                    }
+                }
+            });
+        });
     }
 
     public void diffuserMessage(World monde, Message message) {
         HytaleUtils.diffuserMessage(monde, message);
+    }
+
+    /**
+     * Diffuse une annonce visuelle au centre de l'écran à tous les joueurs.
+     */
+    public void diffuserAnnonce(World monde, Message titre, Message sousTitre) {
+        HytaleUtils.diffuserAnnonce(monde, titre, sousTitre);
+    }
+
+    /**
+     * Diffuse une annonce visuelle uniquement à une équipe spécifique.
+     */
+    public void diffuserAnnonceEquipe(World monde, String role, Message titre, Message sousTitre) {
+        HytaleUtils.diffuserAnnonceFiltree(monde, p -> teamManager.getRole(p).equals(role), titre, sousTitre);
     }
 
     public long getTempsRestantManche() { return tempsRestantManche; }

@@ -11,7 +11,10 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import java.util.logging.Level;
+import java.awt.Color;
+import java.util.function.Predicate;
 
 /**
  * Utilitaires globaux pour simplifier les interactions avec l'API Hytale.
@@ -25,13 +28,10 @@ public class HytaleUtils {
      */
     public static void diffuserMessage(World monde, Message message) {
         if (monde == null) return;
-        // Utilisation de monde.execute pour garantir la sécurité des threads Hytale
         monde.execute(() -> {
             Store<EntityStore> store = monde.getEntityStore().getStore();
-            // Création d'un archetype pour cibler uniquement les joueurs
             Query<EntityStore> playerQuery = Archetype.of(Player.getComponentType());
             
-            // Parcours de chaque "chunk" d'entités chargés
             store.forEachChunk(playerQuery, (chunk, buffer) -> {
                 for (int i = 0; i < chunk.size(); i++) {
                     Player p = chunk.getComponent(i, Player.getComponentType());
@@ -58,15 +58,53 @@ public class HytaleUtils {
         if (joueur == null || position == null) return;
         World monde = joueur.getWorld();
         if (monde != null) {
-            // Ajout du composant Teleport via le thread de simulation
             monde.execute(() -> {
                 monde.getEntityStore().getStore().addComponent(
                     joueur.getReference(), 
                     Teleport.getComponentType(), 
-                    // Création de l'objet Teleport (destination + rotation nulle)
                     Teleport.createForPlayer(position, new Vector3f(0, 0, 0))
                 );
             });
         }
+    }
+
+    /**
+     * Diffuse une annonce visuelle au centre de l'écran à tous les joueurs.
+     */
+    public static void diffuserAnnonce(World monde, Message titre, Message sousTitre) {
+        diffuserAnnonceFiltree(monde, p -> true, titre, sousTitre);
+    }
+
+    /**
+     * Diffuse une annonce visuelle au centre de l'écran avec un filtre sur les joueurs.
+     */
+    public static void diffuserAnnonceFiltree(World monde, Predicate<Player> filtre, Message titre, Message sousTitre) {
+        if (monde == null) return;
+        monde.getPlayers().forEach(p -> {
+            if (filtre.test(p)) {
+                // Utilisation du système de Title natif de Hytale
+                EventTitleUtil.showEventTitleToPlayer(
+                    p.getPlayerRef(), 
+                    titre, 
+                    sousTitre != null ? sousTitre : Message.raw(""), 
+                    true // Major title
+                );
+            }
+        });
+    }
+
+    /**
+     * Vide l'inventaire d'un joueur (utile lors de l'arrêt forcé).
+     * @param joueur Le joueur concerné.
+     */
+    public static void nettoyerInventaireJeu(Player joueur) {
+        if (joueur == null) return;
+        joueur.getWorld().execute(() -> {
+            joueur.getInventory().clear();
+            // On s'assure aussi de vider l'armure si clear() ne le fait pas sur ce conteneur spécifique
+            if (joueur.getInventory().getArmor() != null) {
+                joueur.getInventory().getArmor().clear();
+            }
+        });
     }
 }

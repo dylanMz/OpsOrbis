@@ -65,6 +65,13 @@ public class GameCommand extends CommandBase {
             case "start":
                 gameManager.demarrerMatch(joueur.getWorld());
                 break;
+            case "stop":
+                if (joueur.hasPermission("experience.admin")) {
+                    gameManager.forcerArret(joueur.getWorld());
+                } else {
+                    joueur.sendMessage(Message.raw("Vous n'avez pas la permission.").color(Color.RED));
+                }
+                break;
             case "config":
                 handleConfigCommand(joueur, args);
                 break;
