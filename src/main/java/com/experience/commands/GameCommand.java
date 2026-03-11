@@ -63,7 +63,7 @@ public class GameCommand extends CommandBase {
                 handleKitCommand(joueur, args);
                 break;
             case "start":
-                gameManager.demarrerPartie(joueur.getWorld());
+                gameManager.demarrerMatch(joueur.getWorld());
                 break;
             case "config":
                 handleConfigCommand(joueur, args);

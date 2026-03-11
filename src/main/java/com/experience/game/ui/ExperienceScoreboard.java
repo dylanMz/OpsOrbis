@@ -42,29 +42,42 @@ public class ExperienceScoreboard extends CustomUIHud {
 
         int capturees = rm.getRelicsCapturees();
 
-        // Score principal : reliques capturées
+        int round = gameManager.getRoundActuel();
+        int eq1Score = gameManager.getTeamManager().getScoreEquipe1();
+        int eq2Score = gameManager.getTeamManager().getScoreEquipe2();
+
+        long tempsRestantSec = gameManager.getTempsRestantManche();
+        String tempsFormate = String.format("%02d:%02d", tempsRestantSec / 60, tempsRestantSec % 60);
+
         builder.set("#ScoreBleu.TextSpans", Message.join(
-            Message.raw("Reliques: ").color(Color.WHITE),
-            Message.raw(capturees + "/2").color(capturees == 0 ? Color.LIGHT_GRAY : new Color(255, 160, 0))
+            Message.raw("Manche: ").color(Color.LIGHT_GRAY),
+            Message.raw(round + "/" + GameManager.ROUNDS_MAX).color(Color.YELLOW),
+            Message.raw(" | Tps: ").color(Color.LIGHT_GRAY),
+            Message.raw(tempsFormate).color(tempsRestantSec <= 60 ? Color.RED : Color.YELLOW)
         ));
 
-        // On masque le score rouge (plus utilisé)
-        builder.set("#ScoreRouge.TextSpans", Message.raw(""));
+        builder.set("#ScoreRouge.TextSpans", Message.join(
+            Message.raw("Équipe 1: ").color(Color.CYAN),
+            Message.raw(String.valueOf(eq1Score)).color(Color.WHITE),
+            Message.raw(" | Équipe 2: ").color(Color.RED),
+            Message.raw(String.valueOf(eq2Score)).color(Color.WHITE)
+        ));
 
-        // Statut Relique 1
         builder.set("#RelicB.TextSpans", Message.join(
-            Message.raw("Relique 1: ").color(new Color(255, 160, 0)),
+            Message.raw("Reliques: ").color(Color.LIGHT_GRAY),
+            Message.raw(capturees + "/2 capturées").color(new Color(255, 160, 0))
+        ));
+
+        builder.set("#RelicR.TextSpans", Message.join(
+            Message.raw("Relique 1: ").color(Color.LIGHT_GRAY),
             Message.raw(rm.getRelicB1Status()).color(statusColor(rm.getRelicB1Status()))
         ));
 
-        // Statut Relique 2
-        builder.set("#RelicR.TextSpans", Message.join(
-            Message.raw("Relique 2: ").color(new Color(255, 160, 0)),
+        // On remplace l'affichage du nombre de joueurs par la relique 2 pour éviter le dépassement UI
+        builder.set("#PlayerCount.TextSpans", Message.join(
+            Message.raw("Relique 2: ").color(Color.LIGHT_GRAY),
             Message.raw(rm.getRelicB2Status()).color(statusColor(rm.getRelicB2Status()))
         ));
-
-        // Compteur de joueurs
-        builder.set("#PlayerCount.TextSpans", Message.raw("Joueurs: " + gameManager.getScoreboardHUD().getActiveCount()).color(Color.LIGHT_GRAY));
     }
 
     private Color statusColor(String status) {

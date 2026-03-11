@@ -163,21 +163,20 @@ public class NPCManager {
      */
     public void supprimerPNJ(CommandBuffer<EntityStore> buffer) {
         if (monde != null) {
+            Ref<EntityStore> bRef = pnjBleuRef;
+            Ref<EntityStore> rRef = pnjRougeRef;
+            
             // Suppression via Buffer (système ECS tick)
             if (buffer != null) {
-                if (pnjBleuRef != null) { buffer.removeEntity(pnjBleuRef, RemoveReason.REMOVE); }
-                if (pnjRougeRef != null) { buffer.removeEntity(pnjRougeRef, RemoveReason.REMOVE); }
+                try { if (bRef != null) buffer.removeEntity(bRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
+                try { if (rRef != null) buffer.removeEntity(rRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
             } 
             // Suppression directe (thread simulation)
             else {
                 monde.execute(() -> {
                     Store<EntityStore> store = monde.getEntityStore().getStore();
-                    if (pnjBleuRef != null && store.getArchetype(pnjBleuRef) != null) {
-                        store.removeEntity(pnjBleuRef, RemoveReason.REMOVE);
-                    }
-                    if (pnjRougeRef != null && store.getArchetype(pnjRougeRef) != null) {
-                        store.removeEntity(pnjRougeRef, RemoveReason.REMOVE);
-                    }
+                    try { if (bRef != null) store.removeEntity(bRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
+                    try { if (rRef != null) store.removeEntity(rRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
                 });
             }
         }
