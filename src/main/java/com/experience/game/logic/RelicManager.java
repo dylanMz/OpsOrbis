@@ -46,6 +46,10 @@ public class RelicManager {
     private Vector3d relic1DroppedPos;
     private Vector3d relic2DroppedPos;
 
+    // État strict de capture (pour éviter le faux-positif si l'entité despawn dans le vide)
+    private boolean relic1Capturee;
+    private boolean relic2Capturee;
+
     // Porteurs
     private Player carrierRelic1;
     private Player carrierRelic2;
@@ -62,9 +66,11 @@ public class RelicManager {
         GameConfig config = ExperienceMod.get().getConfigManager().getConfig();
         relic1OriginalPos = config.getRelic1();
         relic2OriginalPos = config.getRelic2();
-        // Réinitialiser l'état au début de chaque partie
         relic1DroppedPos = null;
         relic2DroppedPos = null;
+        relic1Capturee = false;
+        relic2Capturee = false;
+        relicsCapturees = 0;
         HytaleLogger.getLogger().at(Level.INFO).log("[ExperienceMod] Apparition des Reliques...");
         monde.execute(() -> {
             Store<EntityStore> stockageInit = monde.getEntityStore().getStore();
@@ -114,9 +120,13 @@ public class RelicManager {
         boolean estAttaquant = teamManager.estDansEquipe(joueur, "Attaquant");
         boolean estDefenseur = teamManager.estDansEquipe(joueur, "Defenseur");
 
+        boolean estAuSol = (numero == 1) ? relic1DroppedPos != null : relic2DroppedPos != null;
+
         if (estDefenseur) {
-            // Un défenseur passe sur la relique lâchée → elle retourne à la base
-            retournerRelique(numero, buffer);
+            // Seulement si la relique a été lâchée au sol (elle n'est pas à la base)
+            if (estAuSol) {
+                retournerRelique(numero, buffer);
+            }
             return;
         }
 
@@ -141,13 +151,25 @@ public class RelicManager {
         if (numero == 2) { carrierRelic2 = joueur; relic2DroppedPos = null; }
 
         ExperienceMod.get().getGameManager().diffuserMessage(monde, Message.join(
-            Message.raw("⚔ ").color(Color.ORANGE),
+            Message.raw("[!] ").color(Color.ORANGE),
             Message.raw(joueur.getDisplayName()).color(Color.YELLOW),
             Message.raw(etaitAuSol
                 ? " récupère la Relique " + numero + " au sol !"
                 : " vole la Relique " + numero + " !")
                 .color(Color.ORANGE)
         ));
+
+        // Annonce visuelle au centre de l'écran
+        ExperienceMod.get().getGameManager().diffuserAnnonceEquipe(monde, "Attaquant",
+            Message.raw("RELIQUE RÉCUPÉRÉE").color(Color.GREEN),
+            Message.raw("Rapportez-la vite au dépôt !").color(Color.WHITE)
+        );
+        
+        ExperienceMod.get().getGameManager().diffuserAnnonceEquipe(monde, "Defenseur",
+            Message.raw("ALERTE : RELIQUE VOLÉE").color(Color.RED),
+            Message.raw("Interceptez le porteur immédiatement !").color(Color.WHITE)
+        );
+
 
         joueur.sendMessage(Message.raw("Relique " + numero + " en main ! Courez à votre base !").color(Color.YELLOW));
         supprimerEntiteRelique(numero, buffer);
@@ -177,7 +199,7 @@ public class RelicManager {
         monde.execute(() -> spawnRelic(monde.getEntityStore().getStore(), positionFinale, numeroFinal));
 
         ExperienceMod.get().getGameManager().diffuserMessage(monde,
-            Message.raw("🛡 Un défenseur a remis la Relique " + numero + " à la base !").color(new Color(0, 200, 100)));
+            Message.raw("[Défense] Un défenseur a remis la Relique " + numero + " à la base !").color(new Color(0, 200, 100)));
 
         ExperienceMod.get().getGameManager().getScoreboardHUD().rafraichirTous();
     }
@@ -196,12 +218,16 @@ public class RelicManager {
 
             int numeroRelique = estMemeJoueur(joueur, carrierRelic1) ? 1 : 2;
             relicsCapturees++;
+            
+            if (numeroRelique == 1) relic1Capturee = true;
+            else relic2Capturee = true;
+
             joueur.getInventory().getCombinedEverything().removeItemStack(new ItemStack("Bench_Memories", 1));
             if (estMemeJoueur(joueur, carrierRelic1)) carrierRelic1 = null; else carrierRelic2 = null;
 
             ExperienceMod.get().getGameManager().diffuserMessage(monde, Message.join(
-                Message.raw("✓ Relique " + numeroRelique + " capturée ! ").color(new Color(255, 160, 0)),
-                Message.raw(relicsCapturees + "/2 reliques capturées.").color(Color.WHITE)
+                Message.raw("[Attaque] Relique " + numeroRelique + " capturée ! ").color(new Color(255, 160, 0)),
+                Message.raw(relicsCapturees + "/2 reliques.").color(Color.WHITE)
             ));
 
             ExperienceMod.get().getGameManager().getScoreboardHUD().rafraichirTous();
@@ -211,7 +237,7 @@ public class RelicManager {
 
     private void verifierVictoire(World monde, CommandBuffer<EntityStore> buffer) {
         if (relicsCapturees >= 2) {
-            ExperienceMod.get().getGameManager().terminerPartie(monde, "Attaquants", buffer);
+            ExperienceMod.get().getGameManager().terminerRound(monde, "Attaquant", buffer);
         }
     }
 
@@ -249,7 +275,7 @@ public class RelicManager {
         });
 
         ExperienceMod.get().getGameManager().diffuserMessage(monde, Message.join(
-            Message.raw("💀 ").color(Color.RED),
+            Message.raw("[Mort] ").color(Color.RED),
             Message.raw(mort.getDisplayName()).color(Color.YELLOW),
             Message.raw(" a été éliminé ! La Relique " + numeroRelique + " est au sol — les défenseurs peuvent la récupérer !").color(Color.ORANGE)
         ));
@@ -260,16 +286,20 @@ public class RelicManager {
     public void supprimerReliques(CommandBuffer<EntityStore> buffer) {
         Store<EntityStore> store = monde.getEntityStore().getStore();
         if (buffer != null) {
-            if (relic1Ref != null) { buffer.removeEntity(relic1Ref, RemoveReason.REMOVE); relic1Ref = null; }
-            if (relic2Ref != null) { buffer.removeEntity(relic2Ref, RemoveReason.REMOVE); relic2Ref = null; }
+            try { if (relic1Ref != null) buffer.removeEntity(relic1Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
+            try { if (relic2Ref != null) buffer.removeEntity(relic2Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
         } else {
-            if (relic1Ref != null) { store.removeEntity(relic1Ref, RemoveReason.REMOVE); relic1Ref = null; }
-            if (relic2Ref != null) { store.removeEntity(relic2Ref, RemoveReason.REMOVE); relic2Ref = null; }
+            try { if (relic1Ref != null) store.removeEntity(relic1Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
+            try { if (relic2Ref != null) store.removeEntity(relic2Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
         }
+        relic1Ref = null;
+        relic2Ref = null;
         carrierRelic1 = null;
         carrierRelic2 = null;
         relic1DroppedPos = null;
         relic2DroppedPos = null;
+        relic1Capturee = false;
+        relic2Capturee = false;
     }
 
     // ─── Getters ──────────────────────────────────────────────────────────────
@@ -297,17 +327,17 @@ public class RelicManager {
      * Capturée → déposée en base attaquants
      */
     public String getRelicB1Status() {
+        if (relic1Capturee) return "Capturée";
         if (carrierRelic1 != null) return "Volée";
         if (relic1DroppedPos != null) return "Terrain";
-        if (relic1Ref != null) return "Base";
-        return "Capturée";
+        return "Base"; // Si elle despawn (chunk lointain), on la considère théoriquement à la base
     }
 
     public String getRelicB2Status() {
+        if (relic2Capturee) return "Capturée";
         if (carrierRelic2 != null) return "Volée";
         if (relic2DroppedPos != null) return "Terrain";
-        if (relic2Ref != null) return "Base";
-        return "Capturée";
+        return "Base";
     }
 
     public String getRelicR1Status() { return "—"; }
