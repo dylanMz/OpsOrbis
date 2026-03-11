@@ -15,6 +15,9 @@ import com.experience.config.ConfigManager;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import java.util.logging.Level;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Classe principale du mod ExperienceMod.
@@ -24,6 +27,7 @@ public class ExperienceMod extends JavaPlugin {
     private static ExperienceMod instance;
     private GameManager gameManager;
     private ConfigManager configManager;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public ExperienceMod(JavaPluginInit init) {
         super(init);
@@ -90,5 +94,9 @@ public class ExperienceMod extends JavaPlugin {
 
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+
+    public void runDelayed(long delayMs, Runnable task) {
+        scheduler.schedule(task, delayMs, TimeUnit.MILLISECONDS);
     }
 }

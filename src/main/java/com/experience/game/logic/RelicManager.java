@@ -159,6 +159,18 @@ public class RelicManager {
                 .color(Color.ORANGE)
         ));
 
+        // Annonce visuelle au centre de l'écran
+        ExperienceMod.get().getGameManager().diffuserAnnonceEquipe(monde, "Attaquant",
+            Message.raw("RELIQUE RÉCUPÉRÉE").color(Color.GREEN),
+            Message.raw("Rapportez-la vite au dépôt !").color(Color.WHITE)
+        );
+        
+        ExperienceMod.get().getGameManager().diffuserAnnonceEquipe(monde, "Defenseur",
+            Message.raw("ALERTE : RELIQUE VOLÉE").color(Color.RED),
+            Message.raw("Interceptez le porteur immédiatement !").color(Color.WHITE)
+        );
+
+
         joueur.sendMessage(Message.raw("Relique " + numero + " en main ! Courez à votre base !").color(Color.YELLOW));
         supprimerEntiteRelique(numero, buffer);
 

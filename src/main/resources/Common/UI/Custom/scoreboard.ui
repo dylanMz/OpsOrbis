@@ -1,6 +1,6 @@
 @bg = PatchStyle(TexturePath: "bg.png");
 
-Group {
+Group #MainGroup {
     Anchor: (Top: 300, Right: 20, Width: 240, Height: 220);
     Background: @bg;
 

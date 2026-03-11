@@ -85,11 +85,18 @@ public class ScoreboardHUD {
 
     /**
      * Masque le scoreboard pour tous les joueurs actifs (fin de partie).
-     * On vide juste la map côté serveur — envoyer setCustomHud(null) au client
-     * déclencherait un crash "Failed to apply CustomUI HUD commands".
      */
     public void masquerTous(com.hypixel.hytale.server.core.universe.world.World monde) {
-        activeHuds.clear();
+        if (monde == null) return;
+        
+        monde.execute(() -> {
+            for (ExperienceScoreboard hud : activeHuds.values()) {
+                if (hud != null) {
+                    hud.setVisible(false); // Masque le contenu sans supprimer le HUD (évite les crashs)
+                }
+            }
+            activeHuds.clear();
+        });
     }
 
 }
