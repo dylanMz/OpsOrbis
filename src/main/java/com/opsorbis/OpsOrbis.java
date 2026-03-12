@@ -9,7 +9,6 @@ import com.opsorbis.game.systems.RelicPickupSystem;
 import com.opsorbis.game.systems.RelicDepositSystem;
 import com.opsorbis.game.systems.RelicDeathSystem;
 import com.opsorbis.game.systems.PlayerRespawnSystem;
-import com.opsorbis.game.systems.MatchTimerSystem;
 import com.opsorbis.commands.GameCommand;
 import com.opsorbis.config.ConfigManager;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
@@ -62,7 +61,6 @@ public class OpsOrbis extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new RelicDepositSystem(gameManager));
         getEntityStoreRegistry().registerSystem(new RelicDeathSystem(gameManager));
         getEntityStoreRegistry().registerSystem(new PlayerRespawnSystem(gameManager));
-        getEntityStoreRegistry().registerSystem(new MatchTimerSystem(gameManager));
 
         // 5. Enregistrement des évènements (Scoreboard auto-show/hide & Reconnexion)
         getEventRegistry().register(PlayerConnectEvent.class, event -> {
@@ -88,8 +86,33 @@ public class OpsOrbis extends JavaPlugin {
                 getLogger().at(Level.SEVERE).log("Erreur lors du check auto-stop: " + e.getMessage());
             }
         }, 10, 10, TimeUnit.SECONDS);
+        
+        // 7. Tick 1 seconde pour le démarrage automatique et le chrono de match
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                com.hypixel.hytale.server.core.universe.world.World monde = getPremierMonde();
+                if (monde != null) {
+                    monde.execute(() -> gameManager.tickSeconde(monde));
+                }
+            } catch (Exception e) {
+                getLogger().at(Level.SEVERE).log("Erreur lors du tick 1s: " + e.getMessage());
+            }
+        }, 1, 1, TimeUnit.SECONDS);
 
         getLogger().at(Level.INFO).log("Initialisation des systèmes et commandes terminée.");
+    }
+
+    /**
+     * Tente de récupérer une instance de monde via les joueurs connectés.
+     */
+    private com.hypixel.hytale.server.core.universe.world.World getPremierMonde() {
+        for (Player p : gameManager.getTeamManager().getEquipeAttaquants()) {
+            if (p != null && p.getWorld() != null) return p.getWorld();
+        }
+        for (Player p : gameManager.getTeamManager().getEquipeDefenseurs()) {
+            if (p != null && p.getWorld() != null) return p.getWorld();
+        }
+        return null;
     }
 
     @Override

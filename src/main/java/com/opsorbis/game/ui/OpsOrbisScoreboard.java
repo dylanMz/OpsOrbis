@@ -10,13 +10,14 @@ import com.hypixel.hytale.server.core.Message;
 import java.awt.Color;
 
 /**
- * Scoreboard HUD pour le mode Attaquants vs Défenseurs.
- * Affiche les reliques capturées (X/2) et l'état de chaque relique.
+ * Scoreboard HUD simplifié.
+ * Utilise la visibilité pour éviter les crashs de retrait CustomUI.
  */
 public class OpsOrbisScoreboard extends CustomUIHud {
 
     private final GameManager gameManager;
     private boolean visible = true;
+    private boolean aEteMasque = false;
 
     public OpsOrbisScoreboard(PlayerRef playerRef, GameManager gameManager) {
         super(playerRef);
@@ -28,32 +29,37 @@ public class OpsOrbisScoreboard extends CustomUIHud {
         builder.append("scoreboard.ui");
     }
 
-    /**
-     * Définit si le scoreboard doit être affiché ou masqué.
-     */
     public void setVisible(boolean visible) {
+        if (this.visible == visible) return;
         this.visible = visible;
+        if (!visible) this.aEteMasque = false; // Reset pour renvoyer l'ordre de masquage
         rafraichir();
+        if (!visible) this.aEteMasque = true;
     }
 
-    /**
-     * Met à jour le scoreboard avec les données actuelles.
-     * Appelé depuis ScoreboardHUD.rafraichirTous().
-     */
+    public boolean isVisible() {
+        return visible;
+    }
+
     public void rafraichir() {
+        // Si déjà masqué et qu'on veut rester masqué, on ne fait plus rien pour économiser le réseau
+        if (!visible && aEteMasque) return;
+
         UICommandBuilder builder = new UICommandBuilder();
         builder.set("#MainGroup.Visible", visible);
+        
         if (visible) {
             injecterDonnees(builder);
         }
         
-        // Protection contre les erreurs Netty lors de la déconnexion
         try {
             Player p = gameManager.getTeamManager().getJoueurParRef(this.getPlayerRef());
             if (p != null && p.getReference() != null && p.getReference().isValid()) {
                 this.update(false, builder);
             }
         } catch (Exception ignored) {}
+        
+        if (!visible) aEteMasque = true;
     }
 
     private void injecterDonnees(UICommandBuilder builder) {
@@ -61,7 +67,6 @@ public class OpsOrbisScoreboard extends CustomUIHud {
         if (rm == null) return;
 
         int capturees = rm.getRelicsCapturees();
-
         int round = gameManager.getRoundActuel();
         int eq1Score = gameManager.getTeamManager().getScoreEquipe1();
         int eq2Score = gameManager.getTeamManager().getScoreEquipe2();
@@ -93,7 +98,6 @@ public class OpsOrbisScoreboard extends CustomUIHud {
             Message.raw(rm.getRelicB1Status()).color(statusColor(rm.getRelicB1Status()))
         ));
 
-        // On remplace l'affichage du nombre de joueurs par la relique 2 pour éviter le dépassement UI
         builder.set("#PlayerCount.TextSpans", Message.join(
             Message.raw("Relique 2: ").color(Color.LIGHT_GRAY),
             Message.raw(rm.getRelicB2Status()).color(statusColor(rm.getRelicB2Status()))
@@ -102,10 +106,10 @@ public class OpsOrbisScoreboard extends CustomUIHud {
 
     private Color statusColor(String status) {
         switch (status) {
-            case "Base":     return new Color(0, 200, 100);  // Vert  = sécurisée
-            case "Terrain":  return new Color(255, 220, 0);  // Jaune = lâchée au sol
-            case "Volée":    return new Color(255, 80, 80);  // Rouge = portée par un attaquant
-            case "Capturée": return new Color(255, 160, 0);  // Orange = perdue
+            case "Base":     return new Color(0, 200, 100);
+            case "Terrain":  return new Color(255, 220, 0);
+            case "Volée":    return new Color(255, 80, 80);
+            case "Capturée": return new Color(255, 160, 0);
             default:         return Color.LIGHT_GRAY;
         }
     }

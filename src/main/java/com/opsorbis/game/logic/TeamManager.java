@@ -25,10 +25,18 @@ public class TeamManager {
     private int scoreEquipe1;
     private int scoreEquipe2;
 
+    /**
+     * Retourne le nombre total de joueurs inscrits dans les deux équipes.
+     * @return Le nombre total de joueurs.
+     */
     public int getNombreTotalJoueurs() {
         return equipe1.size() + equipe2.size();
     }
     
+    /**
+     * Compte le nombre de joueurs actuellement connectés au monde.
+     * @return Le nombre de joueurs actifs.
+     */
     public int countConnectedPlayers() {
         int count = 0;
         for (Player p : equipe1) {
@@ -148,10 +156,18 @@ public class TeamManager {
 
     // Gestion du match global (Changement de camp & Scores)
     
+    /**
+     * Inverse les rôles (Attaquant/Défenseur) des deux équipes.
+     * Utilisé généralement à la mi-temps.
+     */
     public void inverserRoles() {
         this.equipe1EstAttaquant = !this.equipe1EstAttaquant;
     }
 
+    /**
+     * Ajoute un point au score de l'équipe qui a remporté la manche.
+     * @param roleVainqueurRound Le rôle vainqueur ("Attaquant" ou "Defenseur").
+     */
     public void ajouterPointEquipe(String roleVainqueurRound) {
         if ("Attaquant".equalsIgnoreCase(roleVainqueurRound)) {
             if (equipe1EstAttaquant) scoreEquipe1++; else scoreEquipe2++;
@@ -160,17 +176,34 @@ public class TeamManager {
         }
     }
 
+    /** @return Le score actuel de l'Équipe 1. */
     public int getScoreEquipe1() { return scoreEquipe1; }
+    
+    /** @return Le score actuel de l'Équipe 2. */
     public int getScoreEquipe2() { return scoreEquipe2; }
     
+    /**
+     * Réinitialise les scores à zéro et remet l'Équipe 1 en position d'Attaquant.
+     */
     public void resetScoresEtRoles() {
         this.scoreEquipe1 = 0;
         this.scoreEquipe2 = 0;
         this.equipe1EstAttaquant = true;
     }
 
+    /**
+     * Retire tous les joueurs des deux équipes.
+     */
+    public void viderEquipes() {
+        this.equipe1.clear();
+        this.equipe2.clear();
+    }
+
     // Compatibilité avec l'ancien code existant pour préserver les signatures si besoin
+    /** @return Liste des joueurs de l'équipe Attaquante actuelle. */
     public List<Player> getEquipeBleue() { return getEquipeAttaquants(); }
+    
+    /** @return Liste des joueurs de l'équipe Défenseuse actuelle. */
     public List<Player> getEquipeRouge() { return getEquipeDefenseurs(); }
 
     /**
@@ -184,6 +217,20 @@ public class TeamManager {
         return false;
     }
 
+    /**
+     * Vérifie si un joueur est inscrit dans l'une des deux équipes.
+     * @param joueur Le joueur à vérifier.
+     * @return true si le joueur est dans une équipe.
+     */
+    public boolean isJoueurDansMatch(Player joueur) {
+        return contientJoueur(equipe1, joueur) || contientJoueur(equipe2, joueur);
+    }
+
+    /**
+     * Retourne le rôle actuel (Attaquant/Defenseur) d'un joueur.
+     * @param player Le joueur.
+     * @return Le nom du rôle.
+     */
     public String getRole(Player player) {
         return estDansEquipe(player, "Attaquant") ? "Attaquant" : "Defenseur";
     }
@@ -236,6 +283,10 @@ public class TeamManager {
         }
     }
 
+    /**
+     * Vérifie si l'Équipe 1 est actuellement l'équipe attaquante.
+     * @return true si Eq1 attaque.
+     */
     public boolean isEquipe1Attaquant() {
         return equipe1EstAttaquant;
     }

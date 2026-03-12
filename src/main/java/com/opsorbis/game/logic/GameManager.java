@@ -29,7 +29,8 @@ public class GameManager {
      * États possibles de la partie.
      */
     public enum GameState {
-        ATTENTE,   // En attente de joueurs ou de démarrage
+        ATTENTE,   // En attente de joueurs
+        DEMARRAGE, // Compte à rebours avant le match
         EN_COURS,  // La partie est active
         TERMINEE   // Un gagnant a été désigné
     }
@@ -45,6 +46,10 @@ public class GameManager {
     private final OpsOrbis plugin;
     private final Map<UUID, Long> disconnectionTimes = new HashMap<>(); // UUID -> Heure de déconnexion
     private final Map<UUID, Long> reconnectionTimes = new HashMap<>(); // UUID -> Heure de reconnexion physique
+    
+    // Logique de démarrage automatique
+    private int compteAReboursDemarrage = 30;
+    private static final int DELAI_DEMARRAGE_SECONDES = 30;
     
     // Logique des manches
     private int roundActuel = 1;
@@ -160,6 +165,64 @@ public class GameManager {
     }
 
     /**
+     * Appelé chaque seconde par le plugin pour gérer le démarrage auto et les chronos.
+     */
+    public void tickSeconde(World monde) {
+        if (monde == null) return;
+
+        // 1. Gestion du démarrage automatique
+        verifierDemarrageAutomatique(monde);
+
+        // 2. Si un match est en cours, on peut déléguer au tickChrono ou le faire ici
+        // Pour la cohérence, on gère le chrono de manche ici aussi
+        if (etatActuel == GameState.EN_COURS) {
+            this.tempsRestantManche--;
+            monde.execute(scoreboardHUD::rafraichirTous);
+
+            if (tempsRestantManche <= 0) {
+                HytaleUtils.diffuserMessage(monde, Message.raw("[Temps] LE TEMPS EST ÉCOULÉ !").color(Color.RED));
+                // On délègera la fin de round à un petit délai pour laisser l'info apparaître
+                terminerRound(monde, "Defenseur", null);
+            }
+        }
+    }
+
+    private void verifierDemarrageAutomatique(World monde) {
+        int nbJoueurs = teamManager.getNombreTotalJoueurs();
+
+        if (etatActuel == GameState.ATTENTE) {
+            if (nbJoueurs > 0) {
+                this.etatActuel = GameState.DEMARRAGE;
+                this.compteAReboursDemarrage = DELAI_DEMARRAGE_SECONDES;
+                HytaleUtils.diffuserMessage(monde, Message.raw("[Ops Orbis] Un joueur a rejoint ! Démarrage automatique dans " + compteAReboursDemarrage + "s...").color(Color.CYAN));
+            }
+        } else if (etatActuel == GameState.DEMARRAGE) {
+            if (nbJoueurs == 0) {
+                this.etatActuel = GameState.ATTENTE;
+                HytaleUtils.diffuserMessage(monde, Message.raw("[Ops Orbis] Plus aucun joueur, démarrage annulé.").color(Color.RED));
+                return;
+            }
+
+            compteAReboursDemarrage--;
+
+            // Annonces
+            if (compteAReboursDemarrage == 15 || compteAReboursDemarrage == 10 || (compteAReboursDemarrage <= 5 && compteAReboursDemarrage > 0)) {
+                HytaleUtils.diffuserMessage(monde, Message.raw("[Ops Orbis] Démarrage dans " + compteAReboursDemarrage + "s...").color(Color.YELLOW));
+                // Annonce rapide : Stay=0.6s, In=0.1s, Out=0.3s pour coller au rythme de 1s
+                diffuserAnnonceRapide(monde, 
+                    Message.raw(String.valueOf(compteAReboursDemarrage)).color(Color.YELLOW),
+                    Message.raw("Démarrage de la partie").color(Color.WHITE),
+                    0.6f, 0.1f, 0.3f
+                );
+            }
+
+            if (compteAReboursDemarrage <= 0) {
+                demarrerMatch(monde);
+            }
+        }
+    }
+
+    /**
      * Appelé périodiquement pour arrêter le match s'il est vide.
      */
     public void verifierArretAutomatique() {
@@ -222,31 +285,6 @@ public class GameManager {
     }
 
     /**
-     * Appelé en boucle par le système ECS (ex: MatchTimerSystem)
-     */
-    public void tickChrono(World monde, com.hypixel.hytale.component.CommandBuffer<EntityStore> buffer) {
-        if (etatActuel != GameState.EN_COURS || monde == null) return;
-        
-        long now = System.currentTimeMillis();
-        // Protection contre les appels multiples dans le même tick (plusieurs chunks ECS)
-        if (now <= lastTimeMillis && lastTimeMillis != 0) return;
-
-        if (now - lastTimeMillis >= 1000) { // On décrémente chaque seconde
-            tempsRestantManche--;
-            lastTimeMillis = now;
-            
-            // Rafraîchir l'UI des joueurs
-            scoreboardHUD.rafraichirTous();
-
-            // Condition Victoire Défenseurs : temps écoulé
-            if (tempsRestantManche <= 0) {
-                HytaleUtils.diffuserMessage(monde, Message.raw("[Temps] LE TEMPS EST ÉCOULÉ !").color(Color.RED));
-                terminerRound(monde, "Defenseur", buffer);
-            }
-        }
-    }
-
-    /**
      * Termine une seule manche et avance selon le déroulement (Mi-temps ou Fin).
      * @param roleVainqueur "Attaquant" ou "Defenseur"
      */
@@ -299,11 +337,19 @@ public class GameManager {
             Message.raw("Gagnant : " + texteVainqueur).color(Color.YELLOW)
         ));
         
-        // On masque le scoreboard à la fin naturelle du match
-        scoreboardHUD.masquerTous(monde);
+        // Nettoyer les listes de joueurs et restaurer leur état
+        List<Player> participants = new ArrayList<>(teamManager.getEquipeAttaquants());
+        participants.addAll(teamManager.getEquipeDefenseurs());
 
-        // Restaurer l'état de tous les participants (actifs et offline récents)
-        restaurerTousLesJoueurs(monde);
+        // On masque le scoreboard proprement pour tout le monde (participants et spectateurs)
+        scoreboardHUD.masquerPourTousInscrits(monde);
+
+        for (Player p : participants) {
+            retirerJoueurDuMatch(p); 
+        }
+        
+        teamManager.viderEquipes();
+        teamManager.resetScoresEtRoles();
         disconnectionTimes.clear();
     }
 
@@ -322,11 +368,19 @@ public class GameManager {
             if (npcManager != null) npcManager.supprimerPNJ(null);
             if (relicManager != null) relicManager.supprimerReliques(null);
             
-            // 2. Masquer Scoreboard
-            scoreboardHUD.masquerTous(monde);
+            // 2. Nettoyer les listes de joueurs et restaurer leur état
+            List<Player> participants = new ArrayList<>(teamManager.getEquipeAttaquants());
+            participants.addAll(teamManager.getEquipeDefenseurs());
+            
+            // On masque le scoreboard proprement pour tout le monde (participants et spectateurs)
+            scoreboardHUD.masquerPourTousInscrits(monde);
 
-            // 3. Nettoyer inventaires des joueurs et restaurer
-            restaurerTousLesJoueurs(monde);
+            for (Player p : participants) {
+                retirerJoueurDuMatch(p); 
+            }
+            
+            teamManager.viderEquipes();
+            teamManager.resetScoresEtRoles();
             
             // 4. Nettoyer les délais de déconnexion
             disconnectionTimes.clear();
@@ -416,7 +470,8 @@ public class GameManager {
             disconnectionTimes.put(uuid, System.currentTimeMillis());
         } else {
             // Si pas d'état sauvegardé, on nettoie juste le HUD
-            scoreboardHUD.masquer(ref, null);
+            // Ici joueur n'est pas forcément nul, on le récupère si possible
+            scoreboardHUD.masquer(ref, teamManager.getJoueurParRef(ref));
         }
     }
 
@@ -435,7 +490,7 @@ public class GameManager {
         teamManager.retirerJoueur(joueur);
         
         // 3. Masquer le HUD
-        scoreboardHUD.masquer(joueur.getPlayerRef(), null);
+        scoreboardHUD.masquer(joueur.getPlayerRef(), joueur);
     }
 
     /**
@@ -463,6 +518,13 @@ public class GameManager {
      */
     public void diffuserAnnonce(World monde, Message titre, Message sousTitre) {
         HytaleUtils.diffuserAnnonce(monde, titre, sousTitre);
+    }
+
+    /**
+     * Diffuse une annonce visuelle avec des durées de fondu personnalisées.
+     */
+    public void diffuserAnnonceRapide(World monde, Message titre, Message sousTitre, float dureeMaintien, float dureeApparition, float dureeDisparition) {
+        HytaleUtils.diffuserAnnonceFiltree(monde, p -> true, titre, sousTitre, dureeMaintien, dureeApparition, dureeDisparition);
     }
 
     /**

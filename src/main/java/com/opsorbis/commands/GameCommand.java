@@ -18,24 +18,24 @@ import com.hypixel.hytale.server.core.prefab.selection.SelectionProvider;
 import java.awt.*;
 
 /**
- * Commande principale : /game
+ * Commande principale : /oorbis
  *
  * Sous-commandes disponibles :
- *   /game join                              — Rejoindre une équipe
- *   /game kit <guerrier|archer|mage>        — Choisir un kit
- *   /game start                             — Démarrer la partie
- *   /game config setzone <attaquant|defenseur>
- *   /game config setrelic <1|2>
- *   /game config setnpcspawn <1|2>
- *   /game config setdeposit
- *   /game config save
+ *   /oorbis join                              — Rejoindre une équipe
+ *   /oorbis kit <guerrier|archer|mage>        — Choisir un kit
+ *   /oorbis start                             — Démarrer la partie
+ *   /oorbis config setzone <attaquant|defenseur>
+ *   /oorbis config setrelic <1|2>
+ *   /oorbis config setnpcspawn <1|2>
+ *   /oorbis config setdeposit
+ *   /oorbis config save
  */
 public class GameCommand extends CommandBase {
 
     private final GameManager gameManager;
 
     public GameCommand(GameManager gameManager) {
-        super("game", "Commandes du mini-jeu Experience 5v5");
+        super("oorbis", "Commandes du mini-jeu Experience 5v5");
         this.setAllowsExtraArguments(true);
         this.gameManager = gameManager;
     }
@@ -48,7 +48,7 @@ public class GameCommand extends CommandBase {
         String[] args = ctx.getInputString().trim().split("\\s+");
 
         if (args.length < 2) {
-            joueur.sendMessage(Message.raw("Usage: /game <join|role|kit|start|config>").color(Color.RED));
+            joueur.sendMessage(Message.raw("Usage: /oorbis <join|role|kit|start|config>").color(Color.RED));
             return;
         }
 
@@ -66,12 +66,28 @@ public class GameCommand extends CommandBase {
                 });
                 break;
             case "role":
-                joueur.getWorld().execute(() -> handleRoleCommand(joueur, args));
+                joueur.getWorld().execute(() -> {
+                    if (!gameManager.getTeamManager().isJoueurDansMatch(joueur)) {
+                        joueur.sendMessage(Message.raw("Vous devez d'abord rejoindre la partie avec /oorbis join").color(Color.RED));
+                        return;
+                    }
+                    handleRoleCommand(joueur, args);
+                });
                 break;
             case "kit":
-                joueur.getWorld().execute(() -> handleKitCommand(joueur, args));
+                joueur.getWorld().execute(() -> {
+                    if (!gameManager.getTeamManager().isJoueurDansMatch(joueur)) {
+                        joueur.sendMessage(Message.raw("Vous devez d'abord rejoindre la partie avec /oorbis join").color(Color.RED));
+                        return;
+                    }
+                    handleKitCommand(joueur, args);
+                });
                 break;
             case "start":
+                if (gameManager.getTeamManager().getNombreTotalJoueurs() == 0) {
+                    joueur.sendMessage(Message.raw("Impossible de démarrer : il n'y a aucun joueur dans la partie !").color(Color.RED));
+                    return;
+                }
                 joueur.getWorld().execute(() -> gameManager.demarrerMatch(joueur.getWorld()));
                 break;
             case "stop":
@@ -91,7 +107,7 @@ public class GameCommand extends CommandBase {
 
     private void handleRoleCommand(Player joueur, String[] args) {
         if (args.length < 3) {
-            joueur.sendMessage(Message.raw("Usage: /game role <melee|distance>").color(Color.RED));
+            joueur.sendMessage(Message.raw("Usage: /oorbis role <melee|distance>").color(Color.RED));
             return;
         }
         try {
@@ -104,7 +120,7 @@ public class GameCommand extends CommandBase {
 
     private void handleKitCommand(Player joueur, String[] args) {
         if (args.length < 3) {
-            joueur.sendMessage(Message.raw("Usage: /game kit <guerrier|assassin|archer|arbaletrier>").color(Color.RED));
+            joueur.sendMessage(Message.raw("Usage: /oorbis kit <guerrier|assassin|archer|arbaletrier>").color(Color.RED));
             return;
         }
         try {
@@ -119,7 +135,7 @@ public class GameCommand extends CommandBase {
                     Message.raw(" n'est pas disponible pour le rôle ").color(Color.RED),
                     Message.raw(roleActuel.getNom()).color(Color.ORANGE),
                     Message.raw(". Changez de rôle avec ").color(Color.RED),
-                    Message.raw("/game role <melee|distance>").color(Color.YELLOW)
+                    Message.raw("/oorbis role <melee|distance>").color(Color.YELLOW)
                 ));
                 return;
             }
@@ -147,7 +163,7 @@ public class GameCommand extends CommandBase {
             // ── Zone de spawn ──────────────────────────────────────────────────
             case "setzone":
                 if (args.length < 4) {
-                    joueur.sendMessage(Message.raw("Usage: /game config setzone <attaquant|defenseur>").color(Color.RED));
+                    joueur.sendMessage(Message.raw("Usage: /oorbis config setzone <attaquant|defenseur>").color(Color.RED));
                     return;
                 }
                 setZoneDepuisSelection(joueur, args[3], config);
@@ -156,7 +172,7 @@ public class GameCommand extends CommandBase {
             // ── Position des reliques (2 reliques, côté défenseur) ─────────────
             case "setrelic":
                 if (args.length < 4) {
-                    joueur.sendMessage(Message.raw("Usage: /game config setrelic <1|2>").color(Color.RED));
+                    joueur.sendMessage(Message.raw("Usage: /oorbis config setrelic <1|2>").color(Color.RED));
                     return;
                 }
                 setRelicDepuisPosition(joueur, args[3], config);
@@ -165,7 +181,7 @@ public class GameCommand extends CommandBase {
             // ── Spawn PNJ (1 ou 2) ──────────────────────────────────────────────
             case "setnpcspawn":
                 if (args.length < 4) {
-                    joueur.sendMessage(Message.raw("Usage: /game config setnpcspawn <1|2>").color(Color.RED));
+                    joueur.sendMessage(Message.raw("Usage: /oorbis config setnpcspawn <1|2>").color(Color.RED));
                     return;
                 }
                 setNpcSpawnDepuisPosition(joueur, args[3], config);

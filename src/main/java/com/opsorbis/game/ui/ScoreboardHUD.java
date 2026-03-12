@@ -5,10 +5,12 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Gestionnaire du Scoreboard pour le mod Experience.
- * Cette classe fait le lien entre GameManager et les instances individuelles de OpsOrbisScoreboard.
+ * Gestionnaire du Scoreboard utilisant la visibilité pour le nettoyage.
+ * Évite les crashs de retrait CustomUI en ne faisant que masquer l'élément.
  */
 public class ScoreboardHUD {
 
@@ -19,84 +21,51 @@ public class ScoreboardHUD {
         this.gameManager = gameManager;
     }
 
-    /**
-     * Affiche le scoreboard pour un joueur.
-     * @param joueur Le joueur concerné.
-     */
     public void afficher(Player joueur) {
-        if (joueur == null || activeHuds.containsKey(joueur.getPlayerRef())) return;
-
-        // Création de l'instance réelle du HUD
-        OpsOrbisScoreboard scoreboard = new OpsOrbisScoreboard(joueur.getPlayerRef(), gameManager);
+        if (joueur == null) return;
         
-        // Enregistrement via le HudManager d'Hytale
-        if (joueur.getHudManager() != null) {
-            joueur.getHudManager().setCustomHud(joueur.getPlayerRef(), scoreboard);
-            activeHuds.put(joueur.getPlayerRef(), scoreboard);
-            
-            // On force l'affichage puis on injecte immédiatement les données colorées
+        PlayerRef ref = joueur.getPlayerRef();
+        OpsOrbisScoreboard scoreboard = activeHuds.get(ref);
+        
+        if (scoreboard == null) {
+            scoreboard = new OpsOrbisScoreboard(ref, gameManager);
+            if (joueur.getHudManager() != null) {
+                joueur.getHudManager().setCustomHud(ref, scoreboard);
+                activeHuds.put(ref, scoreboard);
+            }
+        }
+        
+        if (scoreboard != null) {
+            scoreboard.setVisible(true);
             scoreboard.show();
             scoreboard.rafraichir();
         }
     }
 
-    /**
-     * Met à jour le scoreboard pour un joueur spécifique.
-     * @param joueur Le joueur dont le HUD doit être rafraîchi.
-     */
-    public void mettreAJour(Player joueur) {
-        OpsOrbisScoreboard hud = activeHuds.get(joueur.getPlayerRef());
-        if (hud != null) {
-            hud.rafraichir();
-        }
-    }
-
-    /**
-     * Rafraîchit le scoreboard pour tous les joueurs actifs.
-     */
     public void rafraichirTous() {
         for (OpsOrbisScoreboard hud : activeHuds.values()) {
-            hud.rafraichir();
+            if (hud.isVisible()) {
+                hud.rafraichir();
+            }
         }
     }
 
-    /**
-     * Retourne le nombre de scoreboards actuellement affichés.
-     */
-    public int getActiveCount() {
-        return activeHuds.size();
-    }
-
-    /**
-     * Masque le scoreboard pour un joueur via sa référence.
-     * @param playerRef La référence du joueur.
-     * @param joueur Le joueur (pour accéder au HudManager).
-     */
     public void masquer(PlayerRef playerRef, Player joueur) {
-        OpsOrbisScoreboard hud = activeHuds.remove(playerRef);
-        if (hud != null && joueur != null && joueur.getHudManager() != null) {
-            try {
-                joueur.getHudManager().setCustomHud(playerRef, null);
-            } catch (Exception e) {
-                // Masquage échoué (joueur déjà déconnecté), on ignore
-            }
+        OpsOrbisScoreboard hud = activeHuds.get(playerRef);
+        if (hud != null) {
+            hud.setVisible(false);
+            // On le garde dans la map pour pouvoir le réafficher facilement
+            // mais on le considère "inactif" pour la logique de rafraîchissement
         }
     }
 
     /**
-     * Masque le scoreboard pour tous les joueurs actifs (fin de partie).
+     * Masque le scoreboard pour tout le monde via visibilité.
      */
-    public void masquerTous(com.hypixel.hytale.server.core.universe.world.World monde) {
-        if (monde == null) return;
-        
-        monde.execute(() -> {
-            for (OpsOrbisScoreboard hud : activeHuds.values()) {
-                if (hud != null) {
-                    hud.setVisible(false); // Masque le contenu sans supprimer le HUD (évite les crashs)
-                }
-            }
-            activeHuds.clear();
-        });
+    public void masquerPourTousInscrits(com.hypixel.hytale.server.core.universe.world.World monde) {
+        for (OpsOrbisScoreboard hud : activeHuds.values()) {
+            hud.setVisible(false);
+        }
+        // On ne vide pas forcément la map, on laisse les instances prêtes
     }
-
 }
