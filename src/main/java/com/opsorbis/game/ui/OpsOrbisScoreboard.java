@@ -5,6 +5,7 @@ import com.opsorbis.game.logic.RelicManager;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
 import java.awt.Color;
 
@@ -45,7 +46,14 @@ public class OpsOrbisScoreboard extends CustomUIHud {
         if (visible) {
             injecterDonnees(builder);
         }
-        this.update(false, builder);
+        
+        // Protection contre les erreurs Netty lors de la déconnexion
+        try {
+            Player p = gameManager.getTeamManager().getJoueurParRef(this.getPlayerRef());
+            if (p != null && p.getReference() != null && p.getReference().isValid()) {
+                this.update(false, builder);
+            }
+        } catch (Exception ignored) {}
     }
 
     private void injecterDonnees(UICommandBuilder builder) {

@@ -35,8 +35,10 @@ public class HytaleUtils {
             store.forEachChunk(playerQuery, (chunk, buffer) -> {
                 for (int i = 0; i < chunk.size(); i++) {
                     Player p = chunk.getComponent(i, Player.getComponentType());
-                    if (p != null) {
-                        p.sendMessage(message);
+                    if (p != null && p.getReference() != null && p.getReference().isValid()) {
+                        try {
+                            p.sendMessage(message);
+                        } catch (Exception ignored) {}
                     }
                 }
             });
@@ -46,7 +48,7 @@ public class HytaleUtils {
         if (texte == null || texte.trim().isEmpty()) {
             texte = "Message composé (voir en jeu)";
         }
-        HytaleLogger.getLogger().at(Level.INFO).log("[OpsOrbisMod] " + texte);
+        HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] " + texte);
     }
 
     /**
@@ -80,15 +82,24 @@ public class HytaleUtils {
      */
     public static void diffuserAnnonceFiltree(World monde, Predicate<Player> filtre, Message titre, Message sousTitre) {
         if (monde == null) return;
-        monde.getPlayers().forEach(p -> {
-            if (filtre.test(p)) {
-                // Utilisation du système de Title natif de Hytale
-                EventTitleUtil.showEventTitleToPlayer(
-                    p.getPlayerRef(), 
-                    titre, 
-                    sousTitre != null ? sousTitre : Message.raw(""), 
-                    true // Major title
-                );
+        
+        Store<EntityStore> store = monde.getEntityStore().getStore();
+        Query<EntityStore> playerQuery = Archetype.of(Player.getComponentType());
+        
+        store.forEachChunk(playerQuery, (chunk, buffer) -> {
+            for (int i = 0; i < chunk.size(); i++) {
+                Player p = chunk.getComponent(i, Player.getComponentType());
+                if (p != null && p.getReference() != null && p.getReference().isValid() && filtre.test(p)) {
+                    // Utilisation du système de Title natif de Hytale
+                    try {
+                        EventTitleUtil.showEventTitleToPlayer(
+                            p.getPlayerRef(),
+                            titre, 
+                            sousTitre != null ? sousTitre : Message.raw(""), 
+                            true // Major title
+                        );
+                    } catch (Exception ignored) {}
+                }
             }
         });
     }

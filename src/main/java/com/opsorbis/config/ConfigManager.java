@@ -14,7 +14,7 @@ import java.util.logging.Level;
  */
 public class ConfigManager {
 
-    private static final String CONFIG_DIR = "mods/OpsOrbisMod";
+    private static final String CONFIG_DIR = "mods/OpsOrbis";
     private static final String CONFIG_FILE = "GameConfig.json";
     
     private final Gson gson;
@@ -41,14 +41,14 @@ public class ConfigManager {
                 if (this.config == null) {
                     this.config = new GameConfig();
                 }
-                HytaleLogger.getLogger().at(Level.INFO).log("[OpsOrbisMod] Configuration chargée avec succès.");
+                HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Configuration chargée avec succès.");
             } else {
-                HytaleLogger.getLogger().at(Level.INFO).log("[OpsOrbisMod] Aucune config trouvée, utilisation des valeurs par défaut.");
+                HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Aucune config trouvée, utilisation des valeurs par défaut.");
                 this.config = new GameConfig();
                 save(); // Créer le fichier par défaut
             }
         } catch (IOException e) {
-            HytaleLogger.getLogger().at(Level.SEVERE).log("[OpsOrbisMod] Erreur lors du chargement de la config : " + e.getMessage());
+            HytaleLogger.getLogger().at(Level.SEVERE).log("[Ops Orbis] Erreur lors du chargement de la config : " + e.getMessage());
             this.config = new GameConfig();
         }
     }
@@ -65,9 +65,9 @@ public class ConfigManager {
             Path path = dir.resolve(CONFIG_FILE);
             String json = gson.toJson(this.config);
             Files.writeString(path, json, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            HytaleLogger.getLogger().at(Level.INFO).log("[OpsOrbisMod] Configuration sauvegardée dans " + path.toAbsolutePath());
+            HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Configuration sauvegardée dans " + path.toAbsolutePath());
         } catch (IOException e) {
-            HytaleLogger.getLogger().at(Level.SEVERE).log("[OpsOrbisMod] Erreur lors de la sauvegarde de la config : " + e.getMessage());
+            HytaleLogger.getLogger().at(Level.SEVERE).log("[Ops Orbis] Erreur lors de la sauvegarde de la config : " + e.getMessage());
         }
     }
 

@@ -1,6 +1,6 @@
 package com.opsorbis.commands;
 
-import com.opsorbis.OpsOrbisMod;
+import com.opsorbis.OpsOrbis;
 import com.opsorbis.config.GameConfig;
 import com.opsorbis.game.logic.GameManager;
 import com.opsorbis.kits.KitManager;
@@ -54,16 +54,25 @@ public class GameCommand extends CommandBase {
 
         switch (args[1].toLowerCase()) {
             case "join":
-                gameManager.getTeamManager().ajouterJoueur(joueur);
+                joueur.getWorld().execute(() -> {
+                    // Sauvegarder l'état du joueur s'il n'est pas déjà dans une équipe
+                    if (!gameManager.getPlayerStateManager().hasSavedState(joueur)) {
+                        gameManager.getPlayerStateManager().saveState(joueur);
+                    }
+                    // On vide l'inventaire immédiatement après la sauvegarde
+                    joueur.getInventory().clear();
+                    
+                    gameManager.getTeamManager().ajouterJoueur(joueur);
+                });
                 break;
             case "role":
-                handleRoleCommand(joueur, args);
+                joueur.getWorld().execute(() -> handleRoleCommand(joueur, args));
                 break;
             case "kit":
-                handleKitCommand(joueur, args);
+                joueur.getWorld().execute(() -> handleKitCommand(joueur, args));
                 break;
             case "start":
-                gameManager.demarrerMatch(joueur.getWorld());
+                joueur.getWorld().execute(() -> gameManager.demarrerMatch(joueur.getWorld()));
                 break;
             case "stop":
                 if (joueur.hasPermission("experience.admin")) {
@@ -132,7 +141,7 @@ public class GameCommand extends CommandBase {
             return;
         }
 
-        GameConfig config = OpsOrbisMod.get().getConfigManager().getConfig();
+        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
         switch (args[2].toLowerCase()) {
 
             // ── Zone de spawn ──────────────────────────────────────────────────
@@ -169,7 +178,7 @@ public class GameCommand extends CommandBase {
 
             // ── Sauvegarde ──────────────────────────────────────────────────────
             case "save":
-                OpsOrbisMod.get().getConfigManager().save();
+                OpsOrbis.get().getConfigManager().save();
                 joueur.sendMessage(Message.raw("Configuration sauvegardée !").color(Color.GREEN));
                 break;
 

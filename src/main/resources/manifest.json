@@ -4,7 +4,7 @@
   "Version": "1.0.0",
   "ServerVersion": "2026.02.19-1a311a592",
   "Group": "com.opsorbis",
-  "Main": "com.opsorbis.OpsOrbisMod",
+  "Main": "com.opsorbis.OpsOrbis",
   "Description": "Mod Mini-Jeu 5v5 Ops Orbis",
   "Authors": [
     {

@@ -1,6 +1,6 @@
 package com.opsorbis.game.systems;
 
-import com.opsorbis.OpsOrbisMod;
+import com.opsorbis.OpsOrbis;
 import com.opsorbis.config.GameConfig;
 import com.opsorbis.game.logic.GameManager;
 import com.opsorbis.game.logic.RelicManager;

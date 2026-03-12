@@ -1,6 +1,6 @@
 package com.opsorbis.game.systems;
 
-import com.opsorbis.OpsOrbisMod;
+import com.opsorbis.OpsOrbis;
 import com.opsorbis.config.GameConfig;
 import com.opsorbis.game.logic.GameManager;
 import com.opsorbis.game.logic.RelicManager;
@@ -15,6 +15,7 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.component.system.tick.ArchetypeTickingSystem;
+import java.util.UUID;
 
 /**
  * Détecte et gère la proximité entre les joueurs et les reliques.
@@ -50,7 +51,7 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
         RelicManager rm = gameManager.getRelicManager();
         if (rm == null) return;
 
-        GameConfig config = OpsOrbisMod.get().getConfigManager().getConfig();
+        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
 
         for (int i = 0; i < chunk.size(); i++) {
             // Si le joueur est mort, il ne peut pas ramasser d'objet
@@ -59,6 +60,13 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
             Player joueur = chunk.getComponent(i, Player.getComponentType());
             TransformComponent transform = chunk.getComponent(i, TransformComponent.getComponentType());
             if (joueur == null || transform == null) continue;
+
+            // --- NOUVEAU : Cooldown de 10s après reconnexion ---
+            UUID uuid = joueur.getUuid();
+            if (System.currentTimeMillis() - gameManager.getReconnectionTime(uuid) < 10000) {
+                continue;
+            }
+            // ---------------------------------------------------
             
             Player c1 = rm.getCarrierRelic1();
             Player c2 = rm.getCarrierRelic2();

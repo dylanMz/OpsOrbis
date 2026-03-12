@@ -52,6 +52,8 @@ public class KitManager {
     }
 
     public void donnerEquipement(Player joueur) {
+        if (joueur == null || joueur.getWorld() == null) return;
+        
         joueur.getWorld().execute(() -> {
             KitType kit = getKit(joueur);
             Inventory inventaire = joueur.getInventory();

@@ -14,33 +14,37 @@ import com.opsorbis.commands.GameCommand;
 import com.opsorbis.config.ConfigManager;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
+import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import java.util.logging.Level;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.Arrays;
+import java.lang.reflect.Method;
 
 /**
- * Classe principale du mod OpsOrbisMod.
+ * Classe principale du mod Ops Orbis.
  */
-public class OpsOrbisMod extends JavaPlugin {
+public class OpsOrbis extends JavaPlugin {
 
-    private static OpsOrbisMod instance;
+    private static OpsOrbis instance;
     private GameManager gameManager;
     private ConfigManager configManager;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    public OpsOrbisMod(JavaPluginInit init) {
+    public OpsOrbis(JavaPluginInit init) {
         super(init);
         instance = this;
     }
 
-    public static OpsOrbisMod get() {
+    public static OpsOrbis get() {
         return instance;
     }
 
     @Override
     protected void setup() {
-        getLogger().at(Level.INFO).log("Setup du mod OpsOrbisMod (Mini-Jeu 5v5)...");
+        getLogger().at(Level.INFO).log("Setup du mod Ops Orbis...");
         
         // 1. Initialisation de la configuration
         this.configManager = new ConfigManager();
@@ -60,25 +64,37 @@ public class OpsOrbisMod extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new PlayerRespawnSystem(gameManager));
         getEntityStoreRegistry().registerSystem(new MatchTimerSystem(gameManager));
 
-        // 5. Enregistrement des évènements (Scoreboard auto-show/hide)
+        // 5. Enregistrement des évènements (Scoreboard auto-show/hide & Reconnexion)
         getEventRegistry().register(PlayerConnectEvent.class, event -> {
-            if (gameManager.getEtatActuel() == GameManager.GameState.EN_COURS && event.getPlayer() != null) {
-                gameManager.getScoreboardHUD().afficher(event.getPlayer());
+            Player joueur = event.getPlayer();
+            if (joueur != null) {
+                long connectionTime = System.currentTimeMillis();
+                // On attend 2 secondes que le joueur soit bien ajouté au monde pour éviter les NPE
+                scheduler.schedule(() -> {
+                    gameManager.gererReconnexion(joueur, connectionTime);
+                }, 2, TimeUnit.SECONDS);
             }
         });
 
         getEventRegistry().register(PlayerDisconnectEvent.class, event -> {
-            // Pas besoin du HUD manager ici car le joueur quitte, 
-            // on retire juste de notre map interne pour éviter les fuites.
-            gameManager.getScoreboardHUD().masquer(event.getPlayerRef(), null);
+            gameManager.retirerJoueurParRef(event.getPlayerRef());
         });
         
+        // 6. Arret automatique si vide (Check toutes les 10 secondes)
+        scheduler.scheduleAtFixedRate(() -> {
+            try {
+                gameManager.verifierArretAutomatique();
+            } catch (Exception e) {
+                getLogger().at(Level.SEVERE).log("Erreur lors du check auto-stop: " + e.getMessage());
+            }
+        }, 10, 10, TimeUnit.SECONDS);
+
         getLogger().at(Level.INFO).log("Initialisation des systèmes et commandes terminée.");
     }
 
     @Override
     protected void start() {
-        getLogger().at(Level.INFO).log("Le mod OpsOrbisMod (Mini-Jeu 5v5) a bien été chargé !");
+        getLogger().at(Level.INFO).log("Le mod Ops Orbis (Mini-Jeu 5v5) a bien été chargé !");
     }
 
     @Override

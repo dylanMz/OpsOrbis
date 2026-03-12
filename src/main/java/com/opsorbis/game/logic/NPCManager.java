@@ -1,6 +1,6 @@
 package com.opsorbis.game.logic;
 
-import com.opsorbis.OpsOrbisMod;
+import com.opsorbis.OpsOrbis;
 import com.opsorbis.config.GameConfig;
 import com.hypixel.hytale.server.core.entity.Entity;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -13,7 +13,10 @@ import com.hypixel.hytale.component.RemoveReason;
 import com.hypixel.hytale.component.CommandBuffer;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.npc.blackboard.Blackboard;
 import com.hypixel.hytale.server.npc.blackboard.view.attitude.AttitudeView;
@@ -62,55 +65,61 @@ public class NPCManager {
         this.teamManager = teamManager;
     }
 
+    public World getWorld() {
+        return monde;
+    }
+
     /**
      * Fait apparaître les PNJ Skelettes (Archers Brûlés) pour les deux équipes.
      * Les positions sont récupérées depuis la configuration du jeu.
      */
     public void faireApparaitrePNJ() {
         if (monde == null) return;
-
-        GameConfig config = OpsOrbisMod.get().getConfigManager().getConfig();
-        HytaleLogger.getLogger().at(Level.INFO).log("[OpsOrbisMod] Apparition des PNJ aux positions configurées via NPCPlugin...");
-
-        // Exécution différée pour respecter le thread de simulation
         monde.execute(() -> {
-            Store<EntityStore> store = monde.getEntityStore().getStore();
-            String npcType = "SKELETON_BURNT_ARCHER";
+            faireApparaitrePNJ_Direct(monde.getEntityStore().getStore());
+        });
+    }
+
+    /**
+     * Fait apparaître les PNJ directement (doit être appelé sur le thread monde).
+     */
+    public void faireApparaitrePNJ_Direct(Store<EntityStore> store) {
+        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
+        String npcType = "SKELETON_BURNT_ARCHER";
 
             // ==== SPAWN PNJ BLEU ====
             Vector3d posBleu = config.getBlueNpcSpawn();
             if (posBleu == null) {
-                HytaleLogger.getLogger().at(Level.SEVERE).log("[OpsOrbisMod] ERREUR CRITIQUE: La position du spawn Bleu est NULL !");
+                HytaleLogger.getLogger().at(Level.SEVERE).log("[Ops Orbis] ERREUR CRITIQUE: La position du spawn Bleu est NULL !");
             } else {
                 Pair<Ref<EntityStore>, INonPlayerCharacter> resultBleu = NPCPlugin.get().spawnNPC(store, npcType, null, posBleu, ROTATION_DEFAUT);
                 
                 if (resultBleu == null || resultBleu.first() == null) {
-                    HytaleLogger.getLogger().at(Level.SEVERE).log("[OpsOrbisMod] Échec du spawn du PNJ Bleu: " + npcType + " introuvable ou erreur interne !");
+                    HytaleLogger.getLogger().at(Level.SEVERE).log("[Ops Orbis] Échec du spawn du PNJ Bleu: " + npcType + " introuvable ou erreur interne !");
                 } else {
                     pnjBleuRef = resultBleu.first();
                     spawnBleu = posBleu;
                     configurerIA(pnjBleuRef, store, posBleu, true);
-                    HytaleLogger.getLogger().at(Level.INFO).log("[OpsOrbisMod] PNJ Bleu a spawn avec succès !");
+                    HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] PNJ Bleu a spawn avec succès !");
                 }
             }
 
             // ==== SPAWN PNJ ROUGE ====
             Vector3d posRouge = config.getRedNpcSpawn();
             if (posRouge == null) {
-                HytaleLogger.getLogger().at(Level.SEVERE).log("[OpsOrbisMod] ERREUR CRITIQUE: La position du spawn Rouge est NULL !");
+                HytaleLogger.getLogger().at(Level.SEVERE).log("[Ops Orbis] ERREUR CRITIQUE: La position du spawn Rouge est NULL !");
             } else {
                 Pair<Ref<EntityStore>, INonPlayerCharacter> resultRouge = NPCPlugin.get().spawnNPC(store, npcType, null, posRouge, ROTATION_DEFAUT);
                 
                 if (resultRouge == null || resultRouge.first() == null) {
-                    HytaleLogger.getLogger().at(Level.SEVERE).log("[OpsOrbisMod] Échec du spawn du PNJ Rouge: " + npcType + " introuvable ou erreur interne !");
+                    HytaleLogger.getLogger().at(Level.SEVERE).log("[Ops Orbis] Échec du spawn du PNJ Rouge: " + npcType + " introuvable ou erreur interne !");
                 } else {
                     pnjRougeRef = resultRouge.first();
                     spawnRouge = posRouge;
                     configurerIA(pnjRougeRef, store, posRouge, false);
-                    HytaleLogger.getLogger().at(Level.INFO).log("[OpsOrbisMod] PNJ Rouge a spawn avec succès !");
-                }
+                HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] PNJ Rouge a spawn avec succès !");
             }
-        });
+        }
     }
 
     /**
@@ -158,9 +167,30 @@ public class NPCManager {
     }
 
     /**
-     * Supprime proprement les PNJ du monde (fin de partie).
-     * @param buffer Optionnel: Buffer ECS pour suppression différée.
+     * Nettoie les PNJ de ce match en cherchant les entités proches des points de spawn.
+     * C'est une sécurité si les Refs sont perdues.
      */
+    private void nettoyerPNJCible(Store<EntityStore> store) {
+        if (store == null) return;
+        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
+        Vector3d sB = config.getBlueNpcSpawn();
+        Vector3d sR = config.getRedNpcSpawn();
+        
+        Query<EntityStore> query = Archetype.of(NPCEntity.getComponentType(), TransformComponent.getComponentType());
+        store.forEachChunk(query, (chunk, buffer) -> {
+            for (int i = 0; i < chunk.size(); i++) {
+                TransformComponent tc = chunk.getComponent(i, TransformComponent.getComponentType());
+                if (tc != null) {
+                    Vector3d pos = tc.getPosition();
+                    // Si le PNJ est à moins de 25 blocs d'un de nos spawns, c'est probablement le nôtre
+                    if ((sB != null && pos.distanceTo(sB) < 25) || (sR != null && pos.distanceTo(sR) < 25)) {
+                        buffer.removeEntity(chunk.getReferenceTo(i), RemoveReason.REMOVE);
+                    }
+                }
+            }
+        });
+    }
+
     public void supprimerPNJ(CommandBuffer<EntityStore> buffer) {
         if (monde != null) {
             Ref<EntityStore> bRef = pnjBleuRef;
@@ -170,14 +200,14 @@ public class NPCManager {
             if (buffer != null) {
                 try { if (bRef != null) buffer.removeEntity(bRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
                 try { if (rRef != null) buffer.removeEntity(rRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
+                nettoyerPNJCible(monde.getEntityStore().getStore());
             } 
             // Suppression directe (thread simulation)
             else {
-                monde.execute(() -> {
-                    Store<EntityStore> store = monde.getEntityStore().getStore();
-                    try { if (bRef != null) store.removeEntity(bRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
-                    try { if (rRef != null) store.removeEntity(rRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
-                });
+                Store<EntityStore> store = monde.getEntityStore().getStore();
+                try { if (bRef != null) store.removeEntity(bRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
+                try { if (rRef != null) store.removeEntity(rRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
+                nettoyerPNJCible(store);
             }
         }
         pnjBleuRef = null;

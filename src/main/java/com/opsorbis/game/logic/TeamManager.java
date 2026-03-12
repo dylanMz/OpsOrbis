@@ -1,14 +1,17 @@
 package com.opsorbis.game.logic;
 
-import com.opsorbis.OpsOrbisMod;
+import com.opsorbis.OpsOrbis;
 import com.opsorbis.config.GameConfig;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.opsorbis.utils.HytaleUtils;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Gère la répartition des joueurs dans deux équipes persistantes (Equipe 1 et Equipe 2).
@@ -21,6 +24,21 @@ public class TeamManager {
     private boolean equipe1EstAttaquant; // true = Eq1 est Attaquant, false = Eq1 est Défenseur
     private int scoreEquipe1;
     private int scoreEquipe2;
+
+    public int getNombreTotalJoueurs() {
+        return equipe1.size() + equipe2.size();
+    }
+    
+    public int countConnectedPlayers() {
+        int count = 0;
+        for (Player p : equipe1) {
+            if (p != null && p.getWorld() != null) count++;
+        }
+        for (Player p : equipe2) {
+            if (p != null && p.getWorld() != null) count++;
+        }
+        return count;
+    }
 
     public TeamManager() {
         this.equipe1 = new ArrayList<>();
@@ -53,7 +71,7 @@ public class TeamManager {
      * Utilisé lors de la connexion ou à chaque début de manche.
      */
     public void informerEtTeleporterSpawner(Player joueur) {
-        GameConfig config = OpsOrbisMod.get().getConfigManager().getConfig();
+        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
 
         if (estDansEquipe(joueur, "Attaquant")) {
             joueur.sendMessage(Message.join(
@@ -168,6 +186,54 @@ public class TeamManager {
 
     public String getRole(Player player) {
         return estDansEquipe(player, "Attaquant") ? "Attaquant" : "Defenseur";
+    }
+
+    /**
+     * Recherche un joueur dans les équipes à partir de sa référence.
+     */
+    public Player getJoueurParUUID(UUID uuid) {
+        if (uuid == null) return null;
+        for (Player p : equipe1) {
+            if (p != null && p.getUuid().equals(uuid)) return p;
+        }
+        for (Player p : equipe2) {
+            if (p != null && p.getUuid().equals(uuid)) return p;
+        }
+        return null;
+    }
+
+    public Player getJoueurParRef(PlayerRef ref) {
+        if (ref == null) return null;
+        for (Player p : equipe1) {
+            if (p != null && p.getPlayerRef().equals(ref)) return p;
+        }
+        for (Player p : equipe2) {
+            if (p != null && p.getPlayerRef().equals(ref)) return p;
+        }
+        return null;
+    }
+
+    /**
+     * Remplace l'ancienne instance d'un joueur par la nouvelle après reconnexion.
+     */
+    public void mettreAJourJoueur(Player nouveauJoueur) {
+        if (nouveauJoueur == null) return;
+        UUID uuid = nouveauJoueur.getUuid();
+        
+        for (int i = 0; i < equipe1.size(); i++) {
+            Player p = equipe1.get(i);
+            if (p != null && p.getUuid().equals(uuid)) {
+                equipe1.set(i, nouveauJoueur);
+                return;
+            }
+        }
+        for (int i = 0; i < equipe2.size(); i++) {
+            Player p = equipe2.get(i);
+            if (p != null && p.getUuid().equals(uuid)) {
+                equipe2.set(i, nouveauJoueur);
+                return;
+            }
+        }
     }
 
     public boolean isEquipe1Attaquant() {

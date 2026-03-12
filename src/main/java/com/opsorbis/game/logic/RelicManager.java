@@ -1,6 +1,6 @@
 package com.opsorbis.game.logic;
 
-import com.opsorbis.OpsOrbisMod;
+import com.opsorbis.OpsOrbis;
 import com.opsorbis.config.GameConfig;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.logger.HytaleLogger;
@@ -17,6 +17,9 @@ import com.hypixel.hytale.server.core.modules.entity.item.ItemComponent;
 import com.hypixel.hytale.server.core.modules.entity.item.PreventPickup;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.component.query.Query;
+import com.hypixel.hytale.component.Archetype;
+import com.hypixel.hytale.component.ArchetypeChunk;
 
 import java.awt.*;
 import java.util.logging.Level;
@@ -63,7 +66,16 @@ public class RelicManager {
     }
 
     public void initRelics() {
-        GameConfig config = OpsOrbisMod.get().getConfigManager().getConfig();
+        monde.execute(() -> {
+            initRelics_Direct(monde.getEntityStore().getStore());
+        });
+    }
+
+    /**
+     * Initialise les reliques directement (doit être appelé sur le thread monde).
+     */
+    public void initRelics_Direct(Store<EntityStore> store) {
+        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
         relic1OriginalPos = config.getRelic1();
         relic2OriginalPos = config.getRelic2();
         relic1DroppedPos = null;
@@ -71,18 +83,16 @@ public class RelicManager {
         relic1Capturee = false;
         relic2Capturee = false;
         relicsCapturees = 0;
-        HytaleLogger.getLogger().at(Level.INFO).log("[OpsOrbisMod] Apparition des Reliques...");
-        monde.execute(() -> {
-            Store<EntityStore> stockageInit = monde.getEntityStore().getStore();
-            if (relic1OriginalPos != null) spawnRelic(stockageInit, relic1OriginalPos, 1);
-            if (relic2OriginalPos != null) spawnRelic(stockageInit, relic2OriginalPos, 2);
-        });
+        HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Apparition des Reliques...");
+        
+        if (relic1OriginalPos != null) spawnRelic(store, relic1OriginalPos, 1);
+        if (relic2OriginalPos != null) spawnRelic(store, relic2OriginalPos, 2);
     }
 
     private void spawnRelic(Store<EntityStore> stockage, Vector3d position, int numero) {
         String nom = "Bench_Memories";
         if (Item.getAssetMap().getAsset(nom) == null) {
-            HytaleLogger.getLogger().at(Level.SEVERE).log("[OpsOrbisMod] Relique introuvable: " + nom);
+            HytaleLogger.getLogger().at(Level.SEVERE).log("[Ops Orbis] Relique introuvable: " + nom);
             return;
         }
         Holder<EntityStore> entite = ItemComponent.generateItemDrop(stockage, new ItemStack(nom, 1), position, Vector3f.ZERO, 0f, 0f, 0f);
@@ -99,13 +109,17 @@ public class RelicManager {
     private void supprimerEntiteRelique(int numero, CommandBuffer<EntityStore> buffer) {
         Store<EntityStore> stockage = monde.getEntityStore().getStore();
         if (numero == 1 && relic1Ref != null) {
-            if (buffer != null) buffer.removeEntity(relic1Ref, RemoveReason.REMOVE);
-            else stockage.removeEntity(relic1Ref, RemoveReason.REMOVE);
+            if (relic1Ref.isValid()) {
+                if (buffer != null) buffer.removeEntity(relic1Ref, RemoveReason.REMOVE);
+                else stockage.removeEntity(relic1Ref, RemoveReason.REMOVE);
+            }
             relic1Ref = null;
         }
         if (numero == 2 && relic2Ref != null) {
-            if (buffer != null) buffer.removeEntity(relic2Ref, RemoveReason.REMOVE);
-            else stockage.removeEntity(relic2Ref, RemoveReason.REMOVE);
+            if (relic2Ref.isValid()) {
+                if (buffer != null) buffer.removeEntity(relic2Ref, RemoveReason.REMOVE);
+                else stockage.removeEntity(relic2Ref, RemoveReason.REMOVE);
+            }
             relic2Ref = null;
         }
     }
@@ -150,7 +164,7 @@ public class RelicManager {
         if (numero == 1) { carrierRelic1 = joueur; relic1DroppedPos = null; }
         if (numero == 2) { carrierRelic2 = joueur; relic2DroppedPos = null; }
 
-        OpsOrbisMod.get().getGameManager().diffuserMessage(monde, Message.join(
+        OpsOrbis.get().getGameManager().diffuserMessage(monde, Message.join(
             Message.raw("[!] ").color(Color.ORANGE),
             Message.raw(joueur.getDisplayName()).color(Color.YELLOW),
             Message.raw(etaitAuSol
@@ -160,12 +174,12 @@ public class RelicManager {
         ));
 
         // Annonce visuelle au centre de l'écran
-        OpsOrbisMod.get().getGameManager().diffuserAnnonceEquipe(monde, "Attaquant",
+        OpsOrbis.get().getGameManager().diffuserAnnonceEquipe(monde, "Attaquant",
             Message.raw("RELIQUE RÉCUPÉRÉE").color(Color.GREEN),
             Message.raw("Rapportez-la vite au dépôt !").color(Color.WHITE)
         );
         
-        OpsOrbisMod.get().getGameManager().diffuserAnnonceEquipe(monde, "Defenseur",
+        OpsOrbis.get().getGameManager().diffuserAnnonceEquipe(monde, "Defenseur",
             Message.raw("ALERTE : RELIQUE VOLÉE").color(Color.RED),
             Message.raw("Interceptez le porteur immédiatement !").color(Color.WHITE)
         );
@@ -176,7 +190,7 @@ public class RelicManager {
 
         Store<EntityStore> stockage = monde.getEntityStore().getStore();
         joueur.giveItem(new ItemStack("Bench_Memories", 1), joueur.getReference(), stockage);
-        OpsOrbisMod.get().getGameManager().getScoreboardHUD().rafraichirTous();
+        OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
     }
 
     // ─── Retour défenseur ─────────────────────────────────────────────────────
@@ -198,16 +212,16 @@ public class RelicManager {
         final Vector3d positionFinale = positionOrigine;
         monde.execute(() -> spawnRelic(monde.getEntityStore().getStore(), positionFinale, numeroFinal));
 
-        OpsOrbisMod.get().getGameManager().diffuserMessage(monde,
+        OpsOrbis.get().getGameManager().diffuserMessage(monde,
             Message.raw("[Défense] Un défenseur a remis la Relique " + numero + " à la base !").color(new Color(0, 200, 100)));
 
-        OpsOrbisMod.get().getGameManager().getScoreboardHUD().rafraichirTous();
+        OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
     }
 
     // ─── Dépôt ────────────────────────────────────────────────────────────────
 
     public void verifierDepot(Player joueur, CommandBuffer<EntityStore> buffer) {
-        GameConfig config = OpsOrbisMod.get().getConfigManager().getConfig();
+        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
         if (!estMemeJoueur(joueur, carrierRelic1) && !estMemeJoueur(joueur, carrierRelic2)) return;
 
         TransformComponent transform = joueur.getWorld().getEntityStore().getStore()
@@ -225,19 +239,19 @@ public class RelicManager {
             joueur.getInventory().getCombinedEverything().removeItemStack(new ItemStack("Bench_Memories", 1));
             if (estMemeJoueur(joueur, carrierRelic1)) carrierRelic1 = null; else carrierRelic2 = null;
 
-            OpsOrbisMod.get().getGameManager().diffuserMessage(monde, Message.join(
+            OpsOrbis.get().getGameManager().diffuserMessage(monde, Message.join(
                 Message.raw("[Attaque] Relique " + numeroRelique + " capturée ! ").color(new Color(255, 160, 0)),
                 Message.raw(relicsCapturees + "/2 reliques.").color(Color.WHITE)
             ));
 
-            OpsOrbisMod.get().getGameManager().getScoreboardHUD().rafraichirTous();
+            OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
             verifierVictoire(monde, buffer);
         }
     }
 
     private void verifierVictoire(World monde, CommandBuffer<EntityStore> buffer) {
         if (relicsCapturees >= 2) {
-            OpsOrbisMod.get().getGameManager().terminerRound(monde, "Attaquant", buffer);
+            OpsOrbis.get().getGameManager().terminerRound(monde, "Attaquant", buffer);
         }
     }
 
@@ -271,26 +285,80 @@ public class RelicManager {
         monde.execute(() -> {
             spawnRelic(monde.getEntityStore().getStore(), positionSpawn, numeroFinal);
             // Rafraîchissement scoreboard hors contexte ECS pour éviter les blocages
-            OpsOrbisMod.get().getGameManager().getScoreboardHUD().rafraichirTous();
+            OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
         });
 
-        OpsOrbisMod.get().getGameManager().diffuserMessage(monde, Message.join(
+        OpsOrbis.get().getGameManager().diffuserMessage(monde, Message.join(
             Message.raw("[Mort] ").color(Color.RED),
             Message.raw(mort.getDisplayName()).color(Color.YELLOW),
             Message.raw(" a été éliminé ! La Relique " + numeroRelique + " est au sol — les défenseurs peuvent la récupérer !").color(Color.ORANGE)
         ));
     }
+    
+    /**
+     * Si le joueur porte une relique, elle est lâchée au sol (utilisé pour la déconnexion).
+     */
+    public void dropReliqueSiPorteur(Player joueur) {
+        if (joueur == null) return;
+        
+        int numero = 0;
+        if (estMemeJoueur(joueur, carrierRelic1)) numero = 1;
+        else if (estMemeJoueur(joueur, carrierRelic2)) numero = 2;
+        
+        if (numero == 0) return;
+        
+        final int numeroRelique = numero;
+        monde.execute(() -> {
+            gererMortDuPorteur(joueur, monde.getEntityStore().getStore(), null);
+        });
+    }
 
     // ─── Nettoyage ────────────────────────────────────────────────────────────
+
+    /**
+     * Nettoie les reliques (ItemComponent) proches de leurs points de spawn.
+     * Sécurité si les Refs sont perdues.
+     */
+    private void nettoyerReliquesCible(Store<EntityStore> store) {
+        if (store == null) return;
+        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
+        Vector3d s1 = config.getRelic1();
+        Vector3d s2 = config.getRelic2();
+        
+        // On cherche les drops d'items (ItemComponent) AVEC leur position (TransformComponent)
+        Query<EntityStore> query = Archetype.of(ItemComponent.getComponentType(), TransformComponent.getComponentType());
+        store.forEachChunk(query, (chunk, buffer) -> {
+            for (int i = 0; i < chunk.size(); i++) {
+                ItemComponent ic = chunk.getComponent(i, ItemComponent.getComponentType());
+                TransformComponent tc = chunk.getComponent(i, TransformComponent.getComponentType());
+                
+                if (ic != null && tc != null && ic.getItemStack() != null) {
+                    String assetId = ic.getItemStack().toString(); // Fallback string check
+                    if (assetId.contains("Bench_Memories")) {
+                        Vector3d pos = tc.getPosition();
+                        // Si l'objet est proche d'un spawn ou d'une position lâchée connue
+                        if ((s1 != null && pos.distanceTo(s1) < 10) || 
+                            (s2 != null && pos.distanceTo(s2) < 10) ||
+                            (relic1DroppedPos != null && pos.distanceTo(relic1DroppedPos) < 5) ||
+                            (relic2DroppedPos != null && pos.distanceTo(relic2DroppedPos) < 5)) {
+                            buffer.removeEntity(chunk.getReferenceTo(i), RemoveReason.REMOVE);
+                        }
+                    }
+                }
+            }
+        });
+    }
 
     public void supprimerReliques(CommandBuffer<EntityStore> buffer) {
         Store<EntityStore> store = monde.getEntityStore().getStore();
         if (buffer != null) {
             try { if (relic1Ref != null) buffer.removeEntity(relic1Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
             try { if (relic2Ref != null) buffer.removeEntity(relic2Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
+            nettoyerReliquesCible(store);
         } else {
             try { if (relic1Ref != null) store.removeEntity(relic1Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
             try { if (relic2Ref != null) store.removeEntity(relic2Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
+            nettoyerReliquesCible(store);
         }
         relic1Ref = null;
         relic2Ref = null;
@@ -344,7 +412,7 @@ public class RelicManager {
     public String getRelicR2Status() { return "—"; }
 
     public boolean estReliqueDisponible(boolean isBlue, int number) {
-        if (number == 1) return relic1Ref != null;
-        return relic2Ref != null;
+        if (number == 1) return relic1Ref != null && relic1Ref.isValid();
+        return relic2Ref != null && relic2Ref.isValid();
     }
 }
