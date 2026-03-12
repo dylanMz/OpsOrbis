@@ -1,11 +1,11 @@
 {
-  "Name": "Experience Mod",
-  "ID": "experiencemod",
+  "Name": "Ops Orbis",
+  "ID": "OpsOrbis",
   "Version": "1.0.0",
   "ServerVersion": "2026.02.19-1a311a592",
-  "Group": "com.experience",
-  "Main": "com.experience.ExperienceMod",
-  "Description": "Mod Mini-Jeu 5v5 Experience",
+  "Group": "com.opsorbis",
+  "Main": "com.opsorbis.OpsOrbisMod",
+  "Description": "Mod Mini-Jeu 5v5 Ops Orbis",
   "Authors": [
     {
       "Name": "Dylan"
