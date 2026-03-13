@@ -5,7 +5,7 @@ Group #MainGroup {
     Background: @bg;
 
     Label {
-        Text: "EXPERIENCE 5v5";
+        Text: "OPS ORBIS 5v5";
         Anchor: (Top: 5, Left: 10);
     }
 
