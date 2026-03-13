@@ -3,6 +3,7 @@ package com.opsorbis.game.ui;
 import com.opsorbis.game.logic.GameManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.opsorbis.utils.HytaleUtils;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ public class ScoreboardHUD {
     public void afficher(Player joueur) {
         if (joueur == null) return;
         
-        PlayerRef ref = joueur.getPlayerRef();
+        PlayerRef ref = HytaleUtils.getPlayerRef(joueur);
         OpsOrbisScoreboard scoreboard = activeHuds.get(ref);
         
         if (scoreboard == null) {

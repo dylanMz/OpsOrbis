@@ -8,10 +8,11 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.opsorbis.utils.HytaleUtils;
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Gère la répartition des joueurs dans deux équipes persistantes (Equipe 1 et Equipe 2).
@@ -19,8 +20,9 @@ import java.util.UUID;
  */
 public class TeamManager {
 
-    private final List<Player> equipe1;
-    private final List<Player> equipe2;
+    private final List<Player> equipe1 = new CopyOnWriteArrayList<>();
+    private final List<Player> equipe2 = new CopyOnWriteArrayList<>();
+    private final ConcurrentHashMap<UUID, Player> uuidMap = new ConcurrentHashMap<>();
     private boolean equipe1EstAttaquant; // true = Eq1 est Attaquant, false = Eq1 est Défenseur
     private int scoreEquipe1;
     private int scoreEquipe2;
@@ -49,8 +51,6 @@ public class TeamManager {
     }
 
     public TeamManager() {
-        this.equipe1 = new ArrayList<>();
-        this.equipe2 = new ArrayList<>();
         this.equipe1EstAttaquant = true; // Par défaut, l'équipe 1 commence en attaque
         this.scoreEquipe1 = 0;
         this.scoreEquipe2 = 0;
@@ -70,6 +70,10 @@ public class TeamManager {
             equipe2.add(joueur);
         }
         
+        // Mise à jour du cache (doit être fait sur le thread du monde)
+        UUID uuid = HytaleUtils.getPlayerUuid(joueur);
+        if (uuid != null) uuidMap.put(uuid, joueur);
+
         // Annonce du rôle actuel au joueur et téléportation
         informerEtTeleporterSpawner(joueur);
     }
@@ -97,9 +101,18 @@ public class TeamManager {
      * @param joueur Le joueur à retirer.
      */
     public void retirerJoueur(Player joueur) {
-        if (joueur == null || joueur.getReference() == null) return;
-        equipe1.removeIf(p -> p != null && java.util.Objects.equals(p.getReference(), joueur.getReference()));
-        equipe2.removeIf(p -> p != null && java.util.Objects.equals(p.getReference(), joueur.getReference()));
+        if (joueur == null) return;
+        
+        UUID uuid = HytaleUtils.getPlayerUuid(joueur);
+        if (uuid != null) {
+            Player oldInstance = uuidMap.remove(uuid);
+            equipe1.removeIf(p -> p == oldInstance || p == joueur);
+            equipe2.removeIf(p -> p == oldInstance || p == joueur);
+        } else {
+            // Fallback sur l'instance si l'UUID est introuvable
+            equipe1.remove(joueur);
+            equipe2.remove(joueur);
+        }
     }
 
     /**
@@ -191,6 +204,7 @@ public class TeamManager {
     public void viderEquipes() {
         this.equipe1.clear();
         this.equipe2.clear();
+        this.uuidMap.clear();
     }
 
     // Compatibilité avec l'ancien code existant pour préserver les signatures si besoin
@@ -205,8 +219,12 @@ public class TeamManager {
      */
     private boolean contientJoueur(List<Player> equipe, Player joueur) {
         if (joueur == null) return false;
+        UUID uuid = HytaleUtils.getPlayerUuid(joueur);
+        if (uuid == null) return equipe.contains(joueur);
+        
+        Player mappedInstance = uuidMap.get(uuid);
         for (Player p : equipe) {
-            if (java.util.Objects.equals(p.getReference(), joueur.getReference())) return true;
+            if (p == joueur || (mappedInstance != null && p == mappedInstance)) return true;
         }
         return false;
     }
@@ -234,24 +252,12 @@ public class TeamManager {
      */
     public Player getJoueurParUUID(UUID uuid) {
         if (uuid == null) return null;
-        for (Player p : equipe1) {
-            if (p != null && p.getUuid().equals(uuid)) return p;
-        }
-        for (Player p : equipe2) {
-            if (p != null && p.getUuid().equals(uuid)) return p;
-        }
-        return null;
+        return uuidMap.get(uuid);
     }
 
     public Player getJoueurParRef(PlayerRef ref) {
         if (ref == null) return null;
-        for (Player p : equipe1) {
-            if (p != null && p.getPlayerRef().equals(ref)) return p;
-        }
-        for (Player p : equipe2) {
-            if (p != null && p.getPlayerRef().equals(ref)) return p;
-        }
-        return null;
+        return getJoueurParUUID(ref.getUuid());
     }
 
     /**
@@ -259,20 +265,26 @@ public class TeamManager {
      */
     public void mettreAJourJoueur(Player nouveauJoueur) {
         if (nouveauJoueur == null) return;
-        UUID uuid = nouveauJoueur.getUuid();
+        UUID uuid = HytaleUtils.getPlayerUuid(nouveauJoueur);
+        if (uuid == null) return;
         
-        for (int i = 0; i < equipe1.size(); i++) {
-            Player p = equipe1.get(i);
-            if (p != null && p.getUuid().equals(uuid)) {
-                equipe1.set(i, nouveauJoueur);
-                return;
+        // On récupère l'ancienne instance avant de mettre à jour la map
+        Player oldJoueur = uuidMap.get(uuid);
+        
+        // Mise à jour du cache
+        uuidMap.put(uuid, nouveauJoueur);
+
+        // Si on a trouvé une ancienne instance, on la remplace chirurgicalement dans les listes
+        if (oldJoueur != null) {
+            for (int i = 0; i < equipe1.size(); i++) {
+                if (equipe1.get(i) == oldJoueur) {
+                    equipe1.set(i, nouveauJoueur);
+                }
             }
-        }
-        for (int i = 0; i < equipe2.size(); i++) {
-            Player p = equipe2.get(i);
-            if (p != null && p.getUuid().equals(uuid)) {
-                equipe2.set(i, nouveauJoueur);
-                return;
+            for (int i = 0; i < equipe2.size(); i++) {
+                if (equipe2.get(i) == oldJoueur) {
+                    equipe2.set(i, nouveauJoueur);
+                }
             }
         }
     }

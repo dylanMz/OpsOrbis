@@ -401,15 +401,8 @@ public class GameManager {
      */
     public void gererReconnexion(Player joueur, long connectionTime) {
         if (joueur == null) return;
-        UUID uuid = joueur.getUuid();
-
-        // Sécurité : Vérifier si le joueur est bien dans un monde
-        if (joueur.getWorld() == null) {
-            return;
-        }
-
-        // 0. On check s'il y a un dossier de recovery (crash serveur)
-        playerStateManager.checkRecovery(joueur);
+        UUID uuid = HytaleUtils.getPlayerUuid(joueur);
+        if (uuid == null || joueur.getWorld() == null) return;
 
         // 1. Est-ce qu'on a un état sauvegardé pour lui ?
         if (!playerStateManager.hasSavedState(uuid)) {
@@ -463,13 +456,8 @@ public class GameManager {
     public void retirerJoueurParRef(PlayerRef ref) {
         if (ref == null) return;
         
+        UUID uuid = ref.getUuid();
         Player joueur = teamManager.getJoueurParRef(ref);
-        if (joueur == null) {
-            scoreboardHUD.masquer(ref, null);
-            return;
-        }
-
-        UUID uuid = joueur.getUuid();
         
         // Faire tomber la relique si le joueur en porte une
         if (etatActuel == GameState.EN_COURS && relicManager != null) {
@@ -501,7 +489,7 @@ public class GameManager {
         teamManager.retirerJoueur(joueur);
         
         // 3. Masquer le HUD
-        scoreboardHUD.masquer(joueur.getPlayerRef(), joueur);
+        scoreboardHUD.masquer(HytaleUtils.getPlayerRef(joueur), joueur);
     }
 
     /**

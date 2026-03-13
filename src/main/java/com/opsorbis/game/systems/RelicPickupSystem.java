@@ -5,6 +5,7 @@ import com.opsorbis.config.GameConfig;
 import com.opsorbis.game.logic.GameManager;
 import com.opsorbis.game.logic.RelicManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.opsorbis.utils.HytaleUtils;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
@@ -62,7 +63,7 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
             if (joueur == null || transform == null) continue;
 
             // --- NOUVEAU : Cooldown de 10s après reconnexion ---
-            UUID uuid = joueur.getUuid();
+            UUID uuid = HytaleUtils.getPlayerUuid(joueur);
             if (System.currentTimeMillis() - gameManager.getReconnectionTime(uuid) < 10000) {
                 continue;
             }

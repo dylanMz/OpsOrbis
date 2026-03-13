@@ -9,9 +9,11 @@ import com.opsorbis.game.systems.RelicPickupSystem;
 import com.opsorbis.game.systems.RelicDepositSystem;
 import com.opsorbis.game.systems.RelicDeathSystem;
 import com.opsorbis.game.systems.PlayerRespawnSystem;
+import com.opsorbis.utils.HytaleUtils;
 import com.opsorbis.commands.GameCommand;
 import com.opsorbis.config.ConfigManager;
 import com.opsorbis.config.LangManager;
+import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -67,18 +69,33 @@ public class OpsOrbis extends JavaPlugin {
 
         // 5. Enregistrement des évènements (Scoreboard auto-show/hide & Reconnexion)
         getEventRegistry().register(PlayerConnectEvent.class, event -> {
-            Player joueur = event.getPlayer();
-            if (joueur != null) {
+            PlayerRef ref = event.getPlayerRef();
+            if (ref != null) {
                 long connectionTime = System.currentTimeMillis();
-                // On attend 2 secondes que le joueur soit bien ajouté au monde pour éviter les NPE
                 scheduler.schedule(() -> {
-                    gameManager.gererReconnexion(joueur, connectionTime);
+                    // On itère sur les mondes et on execute sur chacun pour trouver le joueur
+                    for (World monde : com.hypixel.hytale.server.core.universe.Universe.get().getWorlds().values()) {
+                        monde.execute(() -> {
+                            Player joueur = HytaleUtils.getPlayerFromRef(ref, monde);
+                            if (joueur != null) {
+                                gameManager.gererReconnexion(joueur, connectionTime);
+                            }
+                        });
+                    }
                 }, 2, TimeUnit.SECONDS);
             }
         });
 
         getEventRegistry().register(PlayerDisconnectEvent.class, event -> {
-            gameManager.retirerJoueurParRef(event.getPlayerRef());
+            PlayerRef ref = event.getPlayerRef();
+            if (ref != null) {
+                // Pour la déconnexion, on peut utiliser n'importe quel monde pour appeler le gestionnaire,
+                // car le retrait du cache TeamManager et disconnectionTimes est thread-safe.
+                World monde = com.hypixel.hytale.server.core.universe.Universe.get().getWorld("default");
+                if (monde != null) {
+                    monde.execute(() -> gameManager.retirerJoueurParRef(ref));
+                }
+            }
         });
         
         // 6. Arret automatique si vide (Check toutes les 10 secondes)

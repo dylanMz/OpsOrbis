@@ -69,8 +69,9 @@ public class PlayerStateManager {
         );
 
         // Sauvegarde double : Mémoire (rapide) + Disque (sécurité)
-        states.put(joueur.getUuid(), state);
-        saveToDisk(joueur.getUuid(), state);
+        UUID uuid = HytaleUtils.getPlayerUuid(joueur);
+        states.put(uuid, state);
+        saveToDisk(uuid, state);
     }
 
     /**
@@ -142,17 +143,18 @@ public class PlayerStateManager {
     public void restoreState(Player joueur) {
         if (joueur == null || joueur.getWorld() == null) return;
 
-        PlayerState state = states.remove(joueur.getUuid());
+        UUID uuid = HytaleUtils.getPlayerUuid(joueur);
+        PlayerState state = states.remove(uuid);
         
         // Si pas en mémoire (ex: reboot après crash), chargement depuis le disque
         if (state == null) {
-            state = loadFromDisk(joueur.getUuid());
+            state = loadFromDisk(uuid);
         }
 
         if (state == null) return;
 
         // Nettoyage immédiat du fichier pour éviter les duplications lors de reconnexions futures
-        removeStateFile(joueur.getUuid());
+        removeStateFile(uuid);
 
         final PlayerState finalState = state;
         joueur.getWorld().execute(() -> {
@@ -183,7 +185,9 @@ public class PlayerStateManager {
     }
 
     public boolean hasSavedState(Player joueur) {
-        return joueur != null && (states.containsKey(joueur.getUuid()) || Files.exists(recoveryDir.resolve(joueur.getUuid().toString() + ".json")));
+        if (joueur == null) return false;
+        UUID uuid = HytaleUtils.getPlayerUuid(joueur);
+        return uuid != null && (states.containsKey(uuid) || Files.exists(recoveryDir.resolve(uuid.toString() + ".json")));
     }
 
     public boolean hasSavedState(UUID uuid) {
@@ -262,7 +266,10 @@ public class PlayerStateManager {
      */
     public void checkRecovery(Player joueur) {
         if (joueur == null) return;
-        Path path = recoveryDir.resolve(joueur.getUuid().toString() + ".json");
+        UUID uuid = HytaleUtils.getPlayerUuid(joueur);
+        if (uuid == null) return;
+        
+        Path path = recoveryDir.resolve(uuid.toString() + ".json");
         if (Files.exists(path)) {
             HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Recovery trouvé pour " + joueur.getDisplayName() + ". Restauration en cours...");
             restoreState(joueur);

@@ -4,6 +4,7 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
@@ -13,6 +14,7 @@ import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import java.util.logging.Level;
+import java.util.UUID;
 import java.awt.Color;
 import java.util.function.Predicate;
 
@@ -20,6 +22,34 @@ import java.util.function.Predicate;
  * Utilitaires globaux pour simplifier les interactions avec l'API Hytale.
  */
 public class HytaleUtils {
+
+    /**
+     * Récupère le PlayerRef (handle de session) d'un joueur via l'ECS.
+     * C'est la méthode recommandée pour éviter les API dépréciées.
+     */
+    public static PlayerRef getPlayerRef(Player joueur) {
+        if (joueur == null || joueur.getWorld() == null || joueur.getReference() == null) return null;
+        return joueur.getWorld().getEntityStore().getStore().getComponent(
+            joueur.getReference(), 
+            PlayerRef.getComponentType()
+        );
+    }
+
+    /**
+     * Récupère l'UUID d'un joueur de manière non dépréciée.
+     */
+    public static UUID getPlayerUuid(Player joueur) {
+        PlayerRef ref = getPlayerRef(joueur);
+        return ref != null ? ref.getUuid() : null;
+    }
+
+    /**
+     * Recherche un joueur (composant Player) à partir d'un PlayerRef en parcourant tous les mondes.
+     */
+    public static Player getPlayerFromRef(PlayerRef ref, World world) {
+        if (ref == null || world == null) return null;
+        return world.getEntityStore().getStore().getComponent(ref.getReference(), Player.getComponentType());
+    }
 
     /**
      * Diffuse un message à tous les joueurs du monde.
@@ -96,7 +126,7 @@ public class HytaleUtils {
                     if (p != null && p.getReference() != null && p.getReference().isValid() && filtre.test(p)) {
                         try {
                             EventTitleUtil.showEventTitleToPlayer(
-                                p.getPlayerRef(),
+                                getPlayerRef(p),
                                 titre, 
                                 sousTitre != null ? sousTitre : Message.raw(""), 
                                 true, // Major title
