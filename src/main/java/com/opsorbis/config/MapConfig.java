@@ -4,16 +4,9 @@ import com.hypixel.hytale.math.shape.Box;
 import com.hypixel.hytale.math.vector.Vector3d;
 
 /**
- * Configuration du mode Attaquants vs Défenseurs.
- *
- * Zones :
- * - attackerZone    : spawn des attaquants
- * - defenderZone    : spawn des défenseurs (+ base des reliques)
- * - relic1 / relic2 : positions des 2 reliques dans la base défenseurs
- * - depositZone     : zone de dépôt des attaquants (pour capturer les reliques)
- * - npcSpawn1/2     : spawns des 2 PNJs défenseurs
+ * Configuration physique de la map (spawns, zones, etc.).
  */
-public class GameConfig {
+public class MapConfig {
 
     // Zones de spawn des équipes
     private Box attackerZone;      // Spawn attaquants
@@ -30,10 +23,7 @@ public class GameConfig {
     // Zone de dépôt des attaquants (pour capter les reliques)
     private Box depositZone;
 
-    // Langue du mod
-    private String language = "fr";
-
-    public GameConfig() {
+    public MapConfig() {
         // Valeurs par défaut
         this.attackerZone  = new Box(90, 45, 90, 110, 55, 110);
         this.defenderZone  = new Box(-110, 45, -110, -90, 55, -90);
@@ -73,21 +63,15 @@ public class GameConfig {
     public Box getDepositZone() { return depositZone; }
     public void setDepositZone(Box depositZone) { this.depositZone = depositZone; }
 
-    public String getLanguage() { return language; }
-    public void setLanguage(String language) { this.language = language; }
-
     // ── Alias pour la compatibilité avec l'ancien code ───────────────────────
 
     public Box getBlueZone() { return attackerZone; }
     public Box getRedZone() { return defenderZone; }
     public Vector3d getRedRelic1() { return relic1; }
     public Vector3d getRedRelic2() { return relic2; }
-    public Vector3d getBlueRelic1() { return null; } // Supprimé
-    public Vector3d getBlueRelic2() { return null; } // Supprimé
     public Vector3d getBlueNpcSpawn() { return npcSpawn1; }
     public Vector3d getRedNpcSpawn() { return npcSpawn2; }
     public Box getBlueDepositZone() { return depositZone; }
-    public Box getRedDepositZone() { return null; } // Supprimé
 
     /**
      * Calcule le centre d'une Box pour le spawn des joueurs.

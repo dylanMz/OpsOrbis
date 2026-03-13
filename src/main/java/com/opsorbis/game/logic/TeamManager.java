@@ -1,7 +1,8 @@
 package com.opsorbis.game.logic;
 
 import com.opsorbis.OpsOrbis;
-import com.opsorbis.config.GameConfig;
+import com.opsorbis.config.LangManager;
+import com.opsorbis.config.MapConfig;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -83,15 +84,17 @@ public class TeamManager {
      * Utilisé lors de la connexion ou à chaque début de manche.
      */
     public void informerEtTeleporterSpawner(Player joueur) {
-        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
+        MapConfig config = OpsOrbis.get().getConfigManager().getMapConfig();
+        PlayerRole role = getRole(joueur);
 
-        if (estDansEquipe(joueur, "Attaquant")) {
-            joueur.sendMessage(OpsOrbis.get().getLangManager().get("prefix"));
-            joueur.sendMessage(OpsOrbis.get().getLangManager().get("team_assign_attacker"));
+        LangManager lang = OpsOrbis.get().getLangManager();
+        if (role == PlayerRole.ATTAQUANT) {
+            joueur.sendMessage(lang.get(joueur, "prefix"));
+            joueur.sendMessage(lang.get(joueur, "team_assign_attacker"));
             teleporterJoueur(joueur, config.getBoxCenter(config.getBlueZone()));
-        } else if (estDansEquipe(joueur, "Defenseur")) {
-            joueur.sendMessage(OpsOrbis.get().getLangManager().get("prefix"));
-            joueur.sendMessage(OpsOrbis.get().getLangManager().get("team_assign_defender"));
+        } else if (role == PlayerRole.DEFENSEUR) {
+            joueur.sendMessage(lang.get(joueur, "prefix"));
+            joueur.sendMessage(lang.get(joueur, "team_assign_defender"));
             teleporterJoueur(joueur, config.getBoxCenter(config.getRedZone()));
         }
     }
@@ -130,11 +133,11 @@ public class TeamManager {
     /**
      * Vérifie si un joueur a le rôle spécifié sur LA MANCHE EN COURS.
      * @param joueur Le joueur.
-     * @param role "Attaquant" ou "Defenseur"
+     * @param role Le rôle à vérifier.
      */
-    public boolean estDansEquipe(Player joueur, String role) {
-        if ("Attaquant".equalsIgnoreCase(role)) return contientJoueur(getEquipeAttaquants(), joueur);
-        if ("Defenseur".equalsIgnoreCase(role)) return contientJoueur(getEquipeDefenseurs(), joueur);
+    public boolean estDansEquipe(Player joueur, PlayerRole role) {
+        if (role == PlayerRole.ATTAQUANT) return contientJoueur(getEquipeAttaquants(), joueur);
+        if (role == PlayerRole.DEFENSEUR) return contientJoueur(getEquipeDefenseurs(), joueur);
         return false;
     }
 
@@ -173,12 +176,12 @@ public class TeamManager {
 
     /**
      * Ajoute un point au score de l'équipe qui a remporté la manche.
-     * @param roleVainqueurRound Le rôle vainqueur ("Attaquant" ou "Defenseur").
+     * @param roleVainqueurRound Le rôle vainqueur.
      */
-    public void ajouterPointEquipe(String roleVainqueurRound) {
-        if ("Attaquant".equalsIgnoreCase(roleVainqueurRound)) {
+    public void ajouterPointEquipe(PlayerRole roleVainqueurRound) {
+        if (PlayerRole.ATTAQUANT == roleVainqueurRound) {
             if (equipe1EstAttaquant) scoreEquipe1++; else scoreEquipe2++;
-        } else {
+        } else if (PlayerRole.DEFENSEUR == roleVainqueurRound) {
             if (equipe1EstAttaquant) scoreEquipe2++; else scoreEquipe1++;
         }
     }
@@ -241,10 +244,12 @@ public class TeamManager {
     /**
      * Retourne le rôle actuel (Attaquant/Defenseur) d'un joueur.
      * @param player Le joueur.
-     * @return Le nom du rôle.
+     * @return Le rôle.
      */
-    public String getRole(Player player) {
-        return estDansEquipe(player, "Attaquant") ? "Attaquant" : "Defenseur";
+    public PlayerRole getRole(Player player) {
+        if (estDansEquipe(player, PlayerRole.ATTAQUANT)) return PlayerRole.ATTAQUANT;
+        if (estDansEquipe(player, PlayerRole.DEFENSEUR)) return PlayerRole.DEFENSEUR;
+        return PlayerRole.AUCUN;
     }
 
     /**

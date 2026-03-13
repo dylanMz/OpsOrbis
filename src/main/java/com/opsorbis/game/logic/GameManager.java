@@ -1,6 +1,8 @@
 package com.opsorbis.game.logic;
 
 import com.opsorbis.OpsOrbis;
+import com.opsorbis.config.GlobalConfig;
+import com.opsorbis.config.LangManager;
 import com.opsorbis.kits.KitManager;
 import com.opsorbis.roles.RolesManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -49,19 +51,11 @@ public class GameManager {
     private final Map<UUID, Long> reconnectionTimes = new HashMap<>(); // UUID -> Heure de reconnexion physique
     
     // Logique de démarrage automatique
-    private int compteAReboursDemarrage = 30;
-    private static final int DELAI_DEMARRAGE_SECONDES = 30;
+    private int compteAReboursDemarrage;
     
     // Logique des manches
     private int roundActuel = 1;
-    public static final int ROUNDS_MAX = 4;
-    public static final int MOITIE_ROUNDS = ROUNDS_MAX / 2;
-    public static final long GRACE_PERIOD_MS = 60000; // 1 minute
-    
-    // Constante de temps par manche (ex: 5 minutes = 300 secondes)
-    public static final int TEMPS_MANCHE_SECONDES = 300;
-    private long tempsRestantManche = TEMPS_MANCHE_SECONDES;
-    private long lastTimeMillis = 0;
+    private long tempsRestantManche;
     private long tempsSansJoueursMillis = 0;
 
     public GameManager(OpsOrbis plugin) {
@@ -72,16 +66,21 @@ public class GameManager {
         this.rolesManager = new RolesManager();
         this.scoreboardHUD = new ScoreboardHUD(this);
         this.playerStateManager = new PlayerStateManager();
+        
+        GlobalConfig global = plugin.getConfigManager().getGlobalConfig();
+        this.compteAReboursDemarrage = global.getAutoStartDelaySeconds();
+        this.tempsRestantManche = global.getRoundDurationSeconds();
     }
 
     /**
-     * Démarre globalement la compétition de 10 manches.
+     * Démarre globalement la compétition de X manches.
      * @param monde Le monde où la partie se déroule.
      */
     public void demarrerMatch(World monde) {
         if (monde == null) return;
         
-        HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Tentative de démarrage du match (10 manches)...");
+        GlobalConfig global = plugin.getConfigManager().getGlobalConfig();
+        HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Tentative de démarrage du match (" + global.getMaxRounds() + " manches)...");
 
         if (etatActuel == GameState.EN_COURS) {
             HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Match déjà en cours.");
@@ -154,15 +153,15 @@ public class GameManager {
 
         HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("round_start_chat"));
         
-        // Annonce visuelle au centre de l'écran (On utilise des titres traduits)
+        LangManager lang = OpsOrbis.get().getLangManager();
         diffuserAnnonce(monde, 
-            OpsOrbis.get().getLangManager().get("match_start_title", roundActuel),
-            Message.raw(teamManager.isEquipe1Attaquant() ? "ÉQUIPE 1 : ATTAQUE" : "ÉQUIPE 1 : DÉFENSE").color(Color.WHITE)
+            lang.get("match_start_title"),
+            lang.get(teamManager.isEquipe1Attaquant() ? "team_1_attacking" : "team_1_defending").color(Color.WHITE)
         );
         
         // Initialisation du chrono
-        this.tempsRestantManche = TEMPS_MANCHE_SECONDES;
-        this.lastTimeMillis = System.currentTimeMillis();
+        GlobalConfig global = plugin.getConfigManager().getGlobalConfig();
+        this.tempsRestantManche = global.getRoundDurationSeconds();
     }
 
     /**
@@ -174,31 +173,32 @@ public class GameManager {
         // 1. Gestion du démarrage automatique
         verifierDemarrageAutomatique(monde);
 
-        // 2. Si un match est en cours, on peut déléguer au tickChrono ou le faire ici
-        // Pour la cohérence, on gère le chrono de manche ici aussi
+        // 2. Si un match est en cours, gère le chrono
         if (etatActuel == GameState.EN_COURS) {
             this.tempsRestantManche--;
             monde.execute(scoreboardHUD::rafraichirTous);
 
             if (tempsRestantManche <= 0) {
                 HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("match_time_up"));
-                // On délègera la fin de round à un petit délai pour laisser l'info apparaître
-                terminerRound(monde, "Defenseur", null);
+                terminerRound(monde, PlayerRole.DEFENSEUR, null);
             }
         }
     }
 
     private void verifierDemarrageAutomatique(World monde) {
+        GlobalConfig global = plugin.getConfigManager().getGlobalConfig();
+        if (!global.isAutoStartEnabled()) return;
+
         int nbJoueurs = teamManager.getNombreTotalJoueurs();
 
         if (etatActuel == GameState.ATTENTE) {
-            if (nbJoueurs > 0) {
+            if (nbJoueurs >= global.getMinPlayersToStart()) {
                 this.etatActuel = GameState.DEMARRAGE;
-                this.compteAReboursDemarrage = DELAI_DEMARRAGE_SECONDES;
+                this.compteAReboursDemarrage = global.getAutoStartDelaySeconds();
                 HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("timer_auto_start", compteAReboursDemarrage));
             }
         } else if (etatActuel == GameState.DEMARRAGE) {
-            if (nbJoueurs == 0) {
+            if (nbJoueurs < global.getMinPlayersToStart()) {
                 this.etatActuel = GameState.ATTENTE;
                 HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("match_start_cancelled"));
                 return;
@@ -209,7 +209,6 @@ public class GameManager {
             // Annonces
             if (compteAReboursDemarrage == 15 || compteAReboursDemarrage == 10 || (compteAReboursDemarrage <= 5 && compteAReboursDemarrage > 0)) {
                 HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("timer_seconds_left", compteAReboursDemarrage));
-                // Annonce rapide : Stay=0.6s, In=0.1s, Out=0.3s pour coller au rythme de 1s
                 diffuserAnnonceRapide(monde, 
                     Message.raw(String.valueOf(compteAReboursDemarrage)).color(Color.YELLOW),
                     OpsOrbis.get().getLangManager().get("timer_seconds_left", compteAReboursDemarrage),
@@ -229,18 +228,17 @@ public class GameManager {
     public void verifierArretAutomatique() {
         if (etatActuel != GameState.EN_COURS) return;
 
+        GlobalConfig global = plugin.getConfigManager().getGlobalConfig();
         int connectes = teamManager.countConnectedPlayers();
         long now = System.currentTimeMillis();
 
         if (connectes == 0) {
             if (tempsSansJoueursMillis == 0) tempsSansJoueursMillis = now;
             
-            // Si le match est vide de joueurs PHYSIQUEMENT présents (même en grace period)
-            // depuis plus de la période de grâce + 5s de marge, on arrête.
-            if ((now - tempsSansJoueursMillis) > (GRACE_PERIOD_MS + 5000)) {
+            // On arrête si vide depuis plus de la période de grâce + 5s
+            if ((now - tempsSansJoueursMillis) > (global.getGracePeriodMs() + 5000)) {
                 HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Match vide depuis trop longtemps. Arret automatique.");
                 
-                // On nettoie les listes de joueurs (pour vider la teamManager et les états si besoin)
                 List<Player> temp = new ArrayList<>(teamManager.getEquipeAttaquants());
                 temp.addAll(teamManager.getEquipeDefenseurs());
                 for (Player p : temp) {
@@ -252,7 +250,6 @@ public class GameManager {
                 }
             }
             
-            // Si les listes sont littéralement vides (tout le monde a fait /game leave)
             if (teamManager.getNombreTotalJoueurs() == 0) {
                 HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Plus aucun joueur dans les equipes. Arret immediat.");
                 if (npcManager != null && npcManager.getWorld() != null) {
@@ -261,18 +258,16 @@ public class GameManager {
             }
         } else {
             tempsSansJoueursMillis = 0;
-            
-            // Nettoyage périodique des joueurs déconnectés ayant dépassé le délai
-            // même si certains sont encore connectés
             verifierDelaisGrace();
         }
     }
 
     private void verifierDelaisGrace() {
+        GlobalConfig global = plugin.getConfigManager().getGlobalConfig();
         long now = System.currentTimeMillis();
         List<UUID> toRemove = new ArrayList<>();
         for (Map.Entry<UUID, Long> entry : disconnectionTimes.entrySet()) {
-            if (now - entry.getValue() > GRACE_PERIOD_MS) {
+            if (now - entry.getValue() > global.getGracePeriodMs()) {
                 toRemove.add(entry.getKey());
             }
         }
@@ -287,14 +282,15 @@ public class GameManager {
 
     /**
      * Termine une seule manche et avance selon le déroulement (Mi-temps ou Fin).
-     * @param roleVainqueur "Attaquant" ou "Defenseur"
+     * @param roleVainqueur Le rôle vainqueur.
      */
-    public void terminerRound(World monde, String roleVainqueur, com.hypixel.hytale.component.CommandBuffer<EntityStore> buffer) {
+    public void terminerRound(World monde, PlayerRole roleVainqueur, com.hypixel.hytale.component.CommandBuffer<EntityStore> buffer) {
         teamManager.ajouterPointEquipe(roleVainqueur);
         
+        LangManager lang = OpsOrbis.get().getLangManager();
         HytaleUtils.diffuserMessage(monde, Message.join(
-            OpsOrbis.get().getLangManager().get("prefix"),
-            Message.raw(roleVainqueur).color("Attaquant".equals(roleVainqueur) ? new Color(255,160,0) : new Color(0,200,100))
+            lang.get("prefix"),
+            lang.get(roleVainqueur.getTranslationKey()).color(roleVainqueur.getColor())
         ));
 
         // 1. Nettoyage immédiat des entités via le buffer ECS
@@ -310,10 +306,11 @@ public class GameManager {
             monde.execute(() -> {
                 this.roundActuel++;
                 
-                if (roundActuel > ROUNDS_MAX) {
+                GlobalConfig global = plugin.getConfigManager().getGlobalConfig();
+                if (roundActuel > global.getMaxRounds()) {
                     terminerMatchGlobal(monde);
                 } else {
-                    if (roundActuel == MOITIE_ROUNDS + 1) {
+                    if (roundActuel == (global.getMaxRounds() / 2) + 1) {
                         HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("half_time_swap"));
                         teamManager.inverserRoles();
                     }
@@ -331,18 +328,19 @@ public class GameManager {
         this.etatActuel = GameState.TERMINEE;
         
         String texteVainqueur;
+        LangManager lang = OpsOrbis.get().getLangManager();
         if (teamManager.getScoreEquipe1() > teamManager.getScoreEquipe2()) {
-            texteVainqueur = "Équipe 1";
+            texteVainqueur = lang.getRaw("team_1_name");
         } else if (teamManager.getScoreEquipe2() > teamManager.getScoreEquipe1()) {
-            texteVainqueur = "Équipe 2";
+            texteVainqueur = lang.getRaw("team_2_name");
         } else {
-            texteVainqueur = "Égalité !";
+            texteVainqueur = lang.getRaw("match_draw");
         }
         
         HytaleUtils.diffuserMessage(monde, Message.join(
             OpsOrbis.get().getLangManager().get("match_over_header"),
-            OpsOrbis.get().getLangManager().get("match_over_scores", teamManager.getScoreEquipe1(), teamManager.getScoreEquipe2()),
-            OpsOrbis.get().getLangManager().get("match_over_winner_label", texteVainqueur)
+            OpsOrbis.get().getLangManager().get("match_over_scores"),
+            OpsOrbis.get().getLangManager().get("match_over_winner_label", "winner", texteVainqueur)
         ));
         
         // Nettoyer les listes de joueurs et restaurer leur état
@@ -424,7 +422,8 @@ public class GameManager {
         // 3. Si la partie est en cours, on check le délai
         Long decoTime = disconnectionTimes.get(uuid);
 
-        if (decoTime != null && (connectionTime - decoTime) <= GRACE_PERIOD_MS) {
+        GlobalConfig global = plugin.getConfigManager().getGlobalConfig();
+        if (decoTime != null && (connectionTime - decoTime) <= global.getGracePeriodMs()) {
             
             // Reconnexion rapide : il reste dans le match
             disconnectionTimes.remove(uuid);

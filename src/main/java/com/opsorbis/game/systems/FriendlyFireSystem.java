@@ -14,6 +14,7 @@ import com.hypixel.hytale.server.core.modules.entity.damage.DamageModule;
 import com.opsorbis.game.logic.GameManager;
 import com.opsorbis.game.logic.NPCManager;
 import com.opsorbis.game.logic.TeamAttitudeProvider;
+import com.opsorbis.game.logic.PlayerRole;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Archetype;
 
@@ -59,17 +60,11 @@ public class FriendlyFireSystem extends DamageEventSystem {
             Player attackerPlayer = store.getComponent(attackerRef, Player.getComponentType());
             if (attackerPlayer != null && gameManager.getNpcManager() != null) {
                 // Identification de l'équipe du PNJ victime
-                boolean isVictimBlueNPC = gameManager.getNpcManager().estPnjBleu(victimRef);
-                boolean isVictimRedNPC = gameManager.getNpcManager().estPnjRouge(victimRef);
+                boolean isVictimNPC = gameManager.getNpcManager().estPnjBleu(victimRef) || 
+                                     gameManager.getNpcManager().estPnjRouge(victimRef);
                 
-                // Cas 1: PNJ Bleu attaqué par un joueur de l'équipe Bleue
-                if (isVictimBlueNPC && gameManager.getTeamManager().estDansEquipe(attackerPlayer, "Bleue")) {
-                    event.setCancelled(true);
-                    event.setAmount(0);
-                    event.putMetaObject(Damage.BLOCKED, true);
-                } 
-                // Cas 2: PNJ Rouge attaqué par un joueur de l'équipe Rouge
-                else if (isVictimRedNPC && gameManager.getTeamManager().estDansEquipe(attackerPlayer, "Rouge")) {
+                // Si la victime est un de nos PNJ et l'attaquant est un défenseur, on bloque
+                if (isVictimNPC && gameManager.getTeamManager().getRole(attackerPlayer) == PlayerRole.DEFENSEUR) {
                     event.setCancelled(true);
                     event.setAmount(0);
                     event.putMetaObject(Damage.BLOCKED, true);

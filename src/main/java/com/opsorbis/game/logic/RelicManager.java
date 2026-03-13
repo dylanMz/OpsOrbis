@@ -1,12 +1,11 @@
 package com.opsorbis.game.logic;
 
 import com.opsorbis.OpsOrbis;
-import com.opsorbis.config.GameConfig;
+import com.opsorbis.config.MapConfig;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.item.config.Item;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -19,7 +18,6 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.Archetype;
-import com.hypixel.hytale.component.ArchetypeChunk;
 
 import java.awt.*;
 import java.util.logging.Level;
@@ -75,7 +73,7 @@ public class RelicManager {
      * Initialise les reliques directement (doit être appelé sur le thread monde).
      */
     public void initRelics_Direct(Store<EntityStore> store) {
-        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
+        MapConfig config = OpsOrbis.get().getConfigManager().getMapConfig();
         relic1OriginalPos = config.getRelic1();
         relic2OriginalPos = config.getRelic2();
         relic1DroppedPos = null;
@@ -131,8 +129,9 @@ public class RelicManager {
      * Seuls les attaquants peuvent la voler ; les défenseurs la retournent à la base.
      */
     public void ramasserRelique(Player joueur, int numero, CommandBuffer<EntityStore> buffer) {
-        boolean estAttaquant = teamManager.estDansEquipe(joueur, "Attaquant");
-        boolean estDefenseur = teamManager.estDansEquipe(joueur, "Defenseur");
+        PlayerRole role = teamManager.getRole(joueur);
+        boolean estAttaquant = (role == PlayerRole.ATTAQUANT);
+        boolean estDefenseur = (role == PlayerRole.DEFENSEUR);
 
         boolean estAuSol = (numero == 1) ? relic1DroppedPos != null : relic2DroppedPos != null;
 
@@ -165,22 +164,22 @@ public class RelicManager {
         if (numero == 2) { carrierRelic2 = joueur; relic2DroppedPos = null; }
 
         OpsOrbis.get().getGameManager().diffuserMessage(monde, 
-            OpsOrbis.get().getLangManager().get("relic_picked_up_global", joueur.getDisplayName(), numero)
+            OpsOrbis.get().getLangManager().get("relic_picked_up_global", "player", joueur.getDisplayName(), "number", numero)
         );
 
         // Annonce visuelle au centre de l'écran
-        OpsOrbis.get().getGameManager().diffuserAnnonceEquipe(monde, "Attaquant",
-            OpsOrbis.get().getLangManager().get("relic_stolen_title"),
-            OpsOrbis.get().getLangManager().get("relic_stolen_subtitle")
+        OpsOrbis.get().getGameManager().diffuserAnnonceEquipe(monde, PlayerRole.ATTAQUANT.name(),
+            OpsOrbis.get().getLangManager().get("relic_stolen_title", "player", joueur.getDisplayName()),
+            OpsOrbis.get().getLangManager().get("relic_stolen_subtitle", "player", joueur.getDisplayName())
         );
         
-        OpsOrbis.get().getGameManager().diffuserAnnonceEquipe(monde, "Defenseur",
-            OpsOrbis.get().getLangManager().get("relic_alert_title"),
-            OpsOrbis.get().getLangManager().get("relic_alert_subtitle")
+        OpsOrbis.get().getGameManager().diffuserAnnonceEquipe(monde, PlayerRole.DEFENSEUR.name(),
+            OpsOrbis.get().getLangManager().get("relic_alert_title", "player", joueur.getDisplayName()),
+            OpsOrbis.get().getLangManager().get("relic_alert_subtitle", "player", joueur.getDisplayName())
         );
 
 
-        joueur.sendMessage(OpsOrbis.get().getLangManager().get("relic_in_hand", numero));
+        joueur.sendMessage(OpsOrbis.get().getLangManager().get("relic_in_hand", "number", numero));
         supprimerEntiteRelique(numero, buffer);
 
         Store<EntityStore> stockage = monde.getEntityStore().getStore();
@@ -208,7 +207,7 @@ public class RelicManager {
         monde.execute(() -> spawnRelic(monde.getEntityStore().getStore(), positionFinale, numeroFinal));
 
         OpsOrbis.get().getGameManager().diffuserMessage(monde,
-            OpsOrbis.get().getLangManager().get("relic_returned_chat", numero));
+            OpsOrbis.get().getLangManager().get("relic_returned_chat", "number", numero));
 
         OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
     }
@@ -216,7 +215,7 @@ public class RelicManager {
     // ─── Dépôt ────────────────────────────────────────────────────────────────
 
     public void verifierDepot(Player joueur, CommandBuffer<EntityStore> buffer) {
-        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
+        MapConfig config = OpsOrbis.get().getConfigManager().getMapConfig();
         if (!estMemeJoueur(joueur, carrierRelic1) && !estMemeJoueur(joueur, carrierRelic2)) return;
 
         TransformComponent transform = joueur.getWorld().getEntityStore().getStore()
@@ -235,7 +234,7 @@ public class RelicManager {
             if (estMemeJoueur(joueur, carrierRelic1)) carrierRelic1 = null; else carrierRelic2 = null;
 
             OpsOrbis.get().getGameManager().diffuserMessage(monde, 
-                OpsOrbis.get().getLangManager().get("relic_captured_chat", numeroRelique, relicsCapturees)
+                OpsOrbis.get().getLangManager().get("relic_captured_chat", "number", numeroRelique, "count", relicsCapturees)
             );
 
             OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
@@ -245,7 +244,7 @@ public class RelicManager {
 
     private void verifierVictoire(World monde, CommandBuffer<EntityStore> buffer) {
         if (relicsCapturees >= 2) {
-            OpsOrbis.get().getGameManager().terminerRound(monde, "Attaquant", buffer);
+            OpsOrbis.get().getGameManager().terminerRound(monde, PlayerRole.ATTAQUANT, buffer);
         }
     }
 
@@ -257,13 +256,17 @@ public class RelicManager {
      * défenseur passe dessus.
      */
     public void gererMortDuPorteur(Player mort, Store<EntityStore> stockage, CommandBuffer<EntityStore> buffer) {
+        if (mort == null) return;
+
         int numeroRelique = 0;
         if (estMemeJoueur(mort, carrierRelic1)) numeroRelique = 1;
         else if (estMemeJoueur(mort, carrierRelic2)) numeroRelique = 2;
         if (numeroRelique == 0) return;
 
-        // Obtenir la position de mort
-        TransformComponent transform = stockage.getComponent(mort.getReference(), TransformComponent.getComponentType());
+        // Obtenir la position de mort de manière sécurisée
+        Ref<EntityStore> ref = mort.getReference();
+        TransformComponent transform = (ref != null) ? stockage.getComponent(ref, TransformComponent.getComponentType()) : null;
+        
         Vector3d positionMort = (transform != null) ? transform.getPosition().clone() :
             ((numeroRelique == 1) ? relic1OriginalPos : relic2OriginalPos);
 
@@ -283,7 +286,7 @@ public class RelicManager {
         });
 
         OpsOrbis.get().getGameManager().diffuserMessage(monde, 
-            OpsOrbis.get().getLangManager().get("relic_dropped_chat", mort.getDisplayName(), numeroRelique)
+            OpsOrbis.get().getLangManager().get("relic_dropped_chat", "player", mort.getDisplayName(), "number", numeroRelique)
         );
     }
     
@@ -313,7 +316,7 @@ public class RelicManager {
      */
     private void nettoyerReliquesCible(Store<EntityStore> store) {
         if (store == null) return;
-        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
+        MapConfig config = OpsOrbis.get().getConfigManager().getMapConfig();
         Vector3d s1 = config.getRelic1();
         Vector3d s2 = config.getRelic2();
         
