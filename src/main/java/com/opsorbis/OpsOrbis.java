@@ -11,6 +11,7 @@ import com.opsorbis.game.systems.RelicDeathSystem;
 import com.opsorbis.game.systems.PlayerRespawnSystem;
 import com.opsorbis.commands.GameCommand;
 import com.opsorbis.config.ConfigManager;
+import com.opsorbis.config.LangManager;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -30,6 +31,7 @@ public class OpsOrbis extends JavaPlugin {
     private static OpsOrbis instance;
     private GameManager gameManager;
     private ConfigManager configManager;
+    private LangManager langManager;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public OpsOrbis(JavaPluginInit init) {
@@ -47,6 +49,7 @@ public class OpsOrbis extends JavaPlugin {
         
         // 1. Initialisation de la configuration
         this.configManager = new ConfigManager();
+        this.langManager = new LangManager(configManager.getConfig().getLanguage());
 
         // 2. Initialisation du gestionnaire de jeu
         this.gameManager = new GameManager(this);
@@ -133,6 +136,10 @@ public class OpsOrbis extends JavaPlugin {
 
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+
+    public LangManager getLangManager() {
+        return langManager;
     }
 
     public void runDelayed(long delayMs, Runnable task) {

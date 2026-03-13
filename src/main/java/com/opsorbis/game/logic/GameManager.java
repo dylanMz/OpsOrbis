@@ -32,6 +32,7 @@ public class GameManager {
         ATTENTE,   // En attente de joueurs
         DEMARRAGE, // Compte à rebours avant le match
         EN_COURS,  // La partie est active
+        PAUSE,     // Transition entre deux manches
         TERMINEE   // Un gagnant a été désigné
     }
 
@@ -126,7 +127,7 @@ public class GameManager {
      * Prépare les entités et téléporte les joueurs pour une manche individuelle.
      */
     public void demarrerRound(World monde) {
-        HytaleUtils.diffuserMessage(monde, Message.raw("[Phase] Démarrage de la Manche " + roundActuel + " !").color(Color.YELLOW));
+        HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("match_start_chat", roundActuel));
 
         // Nettoyage et respawn groupés sur le même tick/tâche monde pour éviter les race conditions
         monde.execute(() -> {
@@ -151,11 +152,11 @@ public class GameManager {
             teamManager.teleporterAuSpawn(p);
         }
 
-        HytaleUtils.diffuserMessage(monde, Message.raw("La manche commence ! Attaquants, volez les reliques !").color(Color.GREEN));
+        HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("round_start_chat"));
         
-        // Annonce visuelle au centre de l'écran
+        // Annonce visuelle au centre de l'écran (On utilise des titres traduits)
         diffuserAnnonce(monde, 
-            Message.raw("MANCHE " + roundActuel).color(Color.YELLOW),
+            OpsOrbis.get().getLangManager().get("match_start_title", roundActuel),
             Message.raw(teamManager.isEquipe1Attaquant() ? "ÉQUIPE 1 : ATTAQUE" : "ÉQUIPE 1 : DÉFENSE").color(Color.WHITE)
         );
         
@@ -180,7 +181,7 @@ public class GameManager {
             monde.execute(scoreboardHUD::rafraichirTous);
 
             if (tempsRestantManche <= 0) {
-                HytaleUtils.diffuserMessage(monde, Message.raw("[Temps] LE TEMPS EST ÉCOULÉ !").color(Color.RED));
+                HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("match_time_up"));
                 // On délègera la fin de round à un petit délai pour laisser l'info apparaître
                 terminerRound(monde, "Defenseur", null);
             }
@@ -194,12 +195,12 @@ public class GameManager {
             if (nbJoueurs > 0) {
                 this.etatActuel = GameState.DEMARRAGE;
                 this.compteAReboursDemarrage = DELAI_DEMARRAGE_SECONDES;
-                HytaleUtils.diffuserMessage(monde, Message.raw("[Ops Orbis] Un joueur a rejoint ! Démarrage automatique dans " + compteAReboursDemarrage + "s...").color(Color.CYAN));
+                HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("timer_auto_start", compteAReboursDemarrage));
             }
         } else if (etatActuel == GameState.DEMARRAGE) {
             if (nbJoueurs == 0) {
                 this.etatActuel = GameState.ATTENTE;
-                HytaleUtils.diffuserMessage(monde, Message.raw("[Ops Orbis] Plus aucun joueur, démarrage annulé.").color(Color.RED));
+                HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("match_start_cancelled"));
                 return;
             }
 
@@ -207,11 +208,11 @@ public class GameManager {
 
             // Annonces
             if (compteAReboursDemarrage == 15 || compteAReboursDemarrage == 10 || (compteAReboursDemarrage <= 5 && compteAReboursDemarrage > 0)) {
-                HytaleUtils.diffuserMessage(monde, Message.raw("[Ops Orbis] Démarrage dans " + compteAReboursDemarrage + "s...").color(Color.YELLOW));
+                HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("timer_seconds_left", compteAReboursDemarrage));
                 // Annonce rapide : Stay=0.6s, In=0.1s, Out=0.3s pour coller au rythme de 1s
                 diffuserAnnonceRapide(monde, 
                     Message.raw(String.valueOf(compteAReboursDemarrage)).color(Color.YELLOW),
-                    Message.raw("Démarrage de la partie").color(Color.WHITE),
+                    OpsOrbis.get().getLangManager().get("timer_seconds_left", compteAReboursDemarrage),
                     0.6f, 0.1f, 0.3f
                 );
             }
@@ -292,28 +293,35 @@ public class GameManager {
         teamManager.ajouterPointEquipe(roleVainqueur);
         
         HytaleUtils.diffuserMessage(monde, Message.join(
-            Message.raw("[Victoire] Manche remportée par l'équipe : ").color(Color.ORANGE),
+            OpsOrbis.get().getLangManager().get("prefix"),
             Message.raw(roleVainqueur).color("Attaquant".equals(roleVainqueur) ? new Color(255,160,0) : new Color(0,200,100))
         ));
 
-        // Nettoyage sécurité asynchrone pour la transition
+        // 1. Nettoyage immédiat des entités via le buffer ECS
         if (npcManager != null) npcManager.supprimerPNJ(buffer);
         if (relicManager != null) relicManager.supprimerReliques(buffer);
         
-        // Progression globale
-        this.roundActuel++;
-        
-        if (roundActuel > ROUNDS_MAX) {
-            terminerMatchGlobal(monde);
-        } else {
-            // Check mi-temps
-            if (roundActuel == MOITIE_ROUNDS + 1) {
-                HytaleUtils.diffuserMessage(monde, Message.raw("[Changement] MI-TEMPS ! Changement de rôles !").color(Color.CYAN));
-                teamManager.inverserRoles();
-            }
-            // Enchaîner au round suivant (idealement avec délai, ici instantané pour le POC)
-            demarrerRound(monde);
-        }
+        // 2. On passe en état PAUSE pour arrêter les systèmes ECS pendant la transition
+        this.etatActuel = GameState.PAUSE;
+        this.tempsRestantManche = 0;
+
+        // 3. On décale la logique de changement de round/match pour sortir du Tick ECS (Évite IllegalStateException)
+        OpsOrbis.get().runDelayed(3000, () -> {
+            monde.execute(() -> {
+                this.roundActuel++;
+                
+                if (roundActuel > ROUNDS_MAX) {
+                    terminerMatchGlobal(monde);
+                } else {
+                    if (roundActuel == MOITIE_ROUNDS + 1) {
+                        HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("half_time_swap"));
+                        teamManager.inverserRoles();
+                    }
+                    this.etatActuel = GameState.EN_COURS;
+                    demarrerRound(monde);
+                }
+            });
+        });
     }
 
     /**
@@ -332,9 +340,9 @@ public class GameManager {
         }
         
         HytaleUtils.diffuserMessage(monde, Message.join(
-            Message.raw("=== LE MATCH EST TERMINÉ ===\n").color(Color.ORANGE),
-            Message.raw("Scores - Eq1: " + teamManager.getScoreEquipe1() + " | Eq2: " + teamManager.getScoreEquipe2() + "\n").color(Color.WHITE),
-            Message.raw("Gagnant : " + texteVainqueur).color(Color.YELLOW)
+            OpsOrbis.get().getLangManager().get("match_over_header"),
+            OpsOrbis.get().getLangManager().get("match_over_scores", teamManager.getScoreEquipe1(), teamManager.getScoreEquipe2()),
+            OpsOrbis.get().getLangManager().get("match_over_winner_label", texteVainqueur)
         ));
         
         // Nettoyer les listes de joueurs et restaurer leur état
@@ -361,7 +369,7 @@ public class GameManager {
         if (monde == null) return;
 
         this.etatActuel = GameState.ATTENTE;
-        HytaleUtils.diffuserMessage(monde, Message.raw("=== LA PARTIE A ÉTÉ ARRÊTÉE PAR UN ADMIN ===").color(Color.RED));
+        HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("match_stopped_admin"));
 
         monde.execute(() -> {
             // 1. Supprimer PNJ et Reliques (buffer null pour suppression directe)
@@ -400,6 +408,9 @@ public class GameManager {
             return;
         }
 
+        // 0. On check s'il y a un dossier de recovery (crash serveur)
+        playerStateManager.checkRecovery(joueur);
+
         // 1. Est-ce qu'on a un état sauvegardé pour lui ?
         if (!playerStateManager.hasSavedState(uuid)) {
             return;
@@ -429,7 +440,7 @@ public class GameManager {
             // IMPORTANT : Mettre à jour l'instance Player dans le TeamManager !
             teamManager.mettreAJourJoueur(joueur);
             
-            joueur.sendMessage(Message.raw("Bon retour ! Vous avez rejoint la partie en cours.").color(Color.GREEN));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("player_reconnect_success"));
             scoreboardHUD.afficher(joueur);
             
             // On lui redonne son équipement de kit car il revient de déconnexion
@@ -442,7 +453,7 @@ public class GameManager {
             disconnectionTimes.remove(uuid);
             reconnectionTimes.put(uuid, connectionTime);
             teamManager.retirerJoueur(joueur);
-            joueur.sendMessage(Message.raw("Délai de grâce expiré. Vous avez été retiré de la partie.").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("player_grace_expired"));
         }
     }
 

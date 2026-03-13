@@ -48,7 +48,7 @@ public class GameCommand extends CommandBase {
         String[] args = ctx.getInputString().trim().split("\\s+");
 
         if (args.length < 2) {
-            joueur.sendMessage(Message.raw("Usage: /oorbis <join|role|kit|start|config>").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_usage_main"));
             return;
         }
 
@@ -85,7 +85,7 @@ public class GameCommand extends CommandBase {
                 break;
             case "start":
                 if (gameManager.getTeamManager().getNombreTotalJoueurs() == 0) {
-                    joueur.sendMessage(Message.raw("Impossible de démarrer : il n'y a aucun joueur dans la partie !").color(Color.RED));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_match_empty"));
                     return;
                 }
                 joueur.getWorld().execute(() -> gameManager.demarrerMatch(joueur.getWorld()));
@@ -94,33 +94,33 @@ public class GameCommand extends CommandBase {
                 if (joueur.hasPermission("experience.admin")) {
                     gameManager.forcerArret(joueur.getWorld());
                 } else {
-                    joueur.sendMessage(Message.raw("Vous n'avez pas la permission.").color(Color.RED));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_no_permission"));
                 }
                 break;
             case "config":
                 handleConfigCommand(joueur, args);
                 break;
             default:
-                joueur.sendMessage(Message.raw("Commande inconnue.").color(Color.RED));
+                joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_unknown"));
         }
     }
 
     private void handleRoleCommand(Player joueur, String[] args) {
         if (args.length < 3) {
-            joueur.sendMessage(Message.raw("Usage: /oorbis role <melee|distance>").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_role_invalid"));
             return;
         }
         try {
             RolesManager.RoleType role = RolesManager.RoleType.valueOf(args[2].toUpperCase());
             gameManager.getRolesManager().choisirRole(joueur, role);
         } catch (IllegalArgumentException e) {
-            joueur.sendMessage(Message.raw("Rôle invalide. Choisissez : melee ou distance").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_role_invalid"));
         }
     }
 
     private void handleKitCommand(Player joueur, String[] args) {
         if (args.length < 3) {
-            joueur.sendMessage(Message.raw("Usage: /oorbis kit <guerrier|assassin|archer|arbaletrier>").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_kit_usage"));
             return;
         }
         try {
@@ -129,26 +129,19 @@ public class GameCommand extends CommandBase {
             // Vérifier que le kit est compatible avec le rôle du joueur
             if (!gameManager.getRolesManager().peutUtiliserKit(joueur, kit)) {
                 RolesManager.RoleType roleActuel = gameManager.getRolesManager().getRole(joueur);
-                joueur.sendMessage(Message.join(
-                    Message.raw("Le kit ").color(Color.RED),
-                    Message.raw(kit.getNom()).color(Color.ORANGE),
-                    Message.raw(" n'est pas disponible pour le rôle ").color(Color.RED),
-                    Message.raw(roleActuel.getNom()).color(Color.ORANGE),
-                    Message.raw(". Changez de rôle avec ").color(Color.RED),
-                    Message.raw("/oorbis role <melee|distance>").color(Color.YELLOW)
-                ));
+                joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_kit_invalid", kit.getNom(), roleActuel.getNom()));
                 return;
             }
 
             gameManager.getKitManager().choisirKit(joueur, kit);
         } catch (IllegalArgumentException e) {
-            joueur.sendMessage(Message.raw("Kit invalide.").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_kit_invalid"));
         }
     }
 
     private void handleConfigCommand(Player joueur, String[] args) {
         if (!joueur.hasPermission("experience.admin")) {
-            joueur.sendMessage(Message.raw("Vous n'avez pas la permission.").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_no_permission"));
             return;
         }
 
@@ -195,7 +188,7 @@ public class GameCommand extends CommandBase {
             // ── Sauvegarde ──────────────────────────────────────────────────────
             case "save":
                 OpsOrbis.get().getConfigManager().save();
-                joueur.sendMessage(Message.raw("Configuration sauvegardée !").color(Color.GREEN));
+                joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_saved"));
                 break;
 
             default:

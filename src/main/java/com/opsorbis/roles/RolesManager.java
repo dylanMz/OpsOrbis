@@ -1,5 +1,6 @@
 package com.opsorbis.roles;
 
+import com.opsorbis.OpsOrbis;
 import com.opsorbis.kits.KitManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.component.Ref;
@@ -66,10 +67,7 @@ public class RolesManager {
         joueursRoles.put(joueur.getReference(), role);
 
         // Message de confirmation
-        joueur.sendMessage(Message.join(
-            Message.raw("Vous avez choisi le rôle ").color(Color.WHITE),
-            Message.raw(role.getNom()).color(role == RoleType.MELEE ? Color.RED : Color.CYAN)
-        ));
+        joueur.sendMessage(OpsOrbis.get().getLangManager().get("role_selected", role.getNom()));
 
         // Afficher les kits disponibles pour ce rôle
         List<KitManager.KitType> kitsDisponibles = getKitsDisponibles(role);
@@ -80,11 +78,8 @@ public class RolesManager {
         }
 
         joueur.sendMessage(Message.join(
-            Message.raw("Kits disponibles : ").color(Color.GRAY),
-            Message.raw(kitsNoms.toString()).color(Color.ORANGE),
-            Message.raw(" — Utilisez ").color(Color.GRAY),
-            Message.raw("/game kit <nom>").color(Color.YELLOW),
-            Message.raw(" pour choisir.").color(Color.GRAY)
+            OpsOrbis.get().getLangManager().get("kit_help_available", kitsNoms.toString()),
+            OpsOrbis.get().getLangManager().get("kit_help_command")
         ));
     }
 

@@ -200,7 +200,8 @@ public class NPCManager {
             if (buffer != null) {
                 try { if (bRef != null) buffer.removeEntity(bRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
                 try { if (rRef != null) buffer.removeEntity(rRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
-                nettoyerPNJCible(monde.getEntityStore().getStore());
+                // On ne fait PAS de nettoyerPNJCible(store) ici car store.forEachChunk 
+                // peut provoquer un crash s'il est appelé pendant un tick ECS (processing).
             } 
             // Suppression directe (thread simulation)
             else {

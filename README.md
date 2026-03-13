@@ -7,30 +7,33 @@
 <a name="english"></a>
 ## 🇺🇸 English
 
-### 🏁 Game Objective
-**Ops Orbis** is a Hytale minigame featuring two teams: **Attackers** and **Defenders**.
+### 🏁 Game Concept
+**Ops Orbis** is a competitive 5v5 ranked minigame. 
+*   **No Building:** Players cannot place or break blocks.
+*   **Matches:** Games consist of **10 rounds** (5 as Attackers, 5 as Defenders).
 
-*   **Attacker Goal:** Break into the enemy base, retrieve the **2 relics**, and bring them back to your deposit zone.
-*   **Defender Goal:** Protect the relics and prevent attackers from capturing them until the timer runs out.
-*   **Relics:** When a carrier dies, the relic is dropped on the spot.
-    *   An **Attacker** can pick it up to continue the objective.
-    *   A **Defender** can instantly return it to base by simply walking over it.
-*   **NPCs:** Two NPC guards assist the defenders in protecting their territory.
+### 👥 Roles & Kits
+Teams are composed of 5 players with a strict role distribution:
+*   **3 Melee players**
+*   **2 Ranged players**
+*   **Locked Roles:** You cannot change your role during a match.
+*   **Flexible Kits:** Multiple equipment kits are available per role (e.g., Archer vs. Crossbowman for Ranged). You can switch kits at the start of every round.
 
-### 🎮 Game Commands
+### 🎯 Objective
+One team attacks, one team defends.
+*   **To win a round:** The Attacking team must steal one of the **2 relics** from the Defender's base and bring it back to their own base, **OR** eliminate the entire enemy team.
+*   **Relic Carrier:** The player carrying a relic receives a **movement speed penalty**.
+*   **Dropped Relics:** If a carrier dies, the relic drops.
+    *   **Attackers** can pick it up to continue.
+    *   **Defenders** can walk over it to instantly return it to base.
+*   **NPC Guards:** Defenders are assisted by two NPC guards.
+
+### 🎮 Commands
 *   `/oorbis join`: Join the game (auto-assigns a team).
 *   `/oorbis role <melee|distance>`: Choose your combat archetype.
-*   `/oorbis kit <guerrier|assassin|archer|arbaletrier>`: Choose specific equipment (depends on selected role).
-*   `/oorbis start`: Manually start the match (requires players).
+*   `/oorbis kit <guerrier|assassin|archer|arbaletrier>`: Choose specific equipment.
+*   `/oorbis start`: Manually start the match.
 *   `/oorbis stop`: (Admin) Force stop the game and reset players/world.
-
-### ⚙️ Configuration (Admin)
-Configuration relies on player position or HyUI selections.
-*   `/oorbis config setzone <attaquant|defenseur>`: Defines a team's spawn zone (via selection).
-*   `/oorbis config setrelic <1|2>`: Sets a relic's spawn position (at your location).
-*   `/oorbis config setnpcspawn <1|2>`: Sets an NPC guard's spawn point (at your location).
-*   `/oorbis config setdeposit`: Defines the zone where attackers must bring relics (via selection).
-*   `/oorbis config save`: **Essential** to save all changes to the configuration file.
 
 ---
 
@@ -38,26 +41,29 @@ Configuration relies on player position or HyUI selections.
 ## 🇫🇷 Français
 
 ### 🏁 Principe du Jeu
-**Ops Orbis** est un mini-jeu Hytale opposant deux équipes : les **Attaquants** et les **Défenseurs**.
+**Ops Orbis** est un mini-jeu compétitif classé en 5v5.
+*   **Pas de Construction :** Les joueurs ne peuvent ni poser ni détruire de blocs.
+*   **Matchs :** Les parties se jouent en **10 rounds** (5 en Attaque, 5 en Défense).
 
-*   **Objectif des Attaquants :** Pénétrer dans la base ennemie, récupérer les **2 reliques** et les ramener dans leur zone de dépôt.
-*   **Objectif des Défenseurs :** Protéger les reliques et empêcher les attaquants de les capturer jusqu'à la fin du temps imparti.
-*   **Les Reliques :** Lorsqu'un porteur de relique meurt, la relique tombe au sol. 
-    *   Un **Attquant** peut la ramasser pour continuer la progression.
-    *   Un **Défenseur** peut la renvoyer instantanément à sa base en passant simplement dessus.
-*   **PNJs :** Deux gardes PNJs aident les défenseurs à protéger leur territoire.
+### 👥 Rôles & Kits
+Chaque équipe de 5 joueurs doit respecter une composition fixe :
+*   **3 joueurs de Mélée**
+*   **2 joueurs à Distance**
+*   **Rôles Fixes :** Vous ne pouvez pas changer de rôle pendant la partie.
+*   **Kits Flexibles :** Plusieurs kits sont disponibles par rôle (ex: Arc ou Arbalète pour Distance). Vous pouvez changer de kit au début de chaque round.
 
-### 🎮 Commandes de Jeu
+### 🎯 Objectif
+Une équipe attaque, l'autre défend.
+*   **Pour gagner un round :** L'équipe en Attaque doit voler l'une des **2 reliques** dans la base adverse et la ramener dans sa propre base, **OU** éliminer l'intégralité de l'équipe adverse.
+*   **Porteur de Relique :** Le joueur qui porte une relique reçoit un **malus de vitesse**.
+*   **Reliques au sol :** Si le porteur meurt, la relique tombe au sol.
+    *   Un **Attaquant** peut la ramasser pour continuer.
+    *   Un **Défenseur** peut passer dessus pour la renvoyer instantanément à sa base.
+*   **Gardes PNJs :** Les défenseurs sont aidés par deux gardes PNJs.
+
+### 🎮 Commandes
 *   `/oorbis join` : Rejoindre la partie (assigne une équipe automatiquement).
 *   `/oorbis role <melee|distance>` : Choisir votre archétype de combat.
-*   `/oorbis kit <guerrier|assassin|archer|arbaletrier>` : Choisir un équipement spécifique (dépend du rôle).
-*   `/oorbis start` : Lancer manuellement le match (nécessite des joueurs).
+*   `/oorbis kit <guerrier|assassin|archer|arbaletrier>` : Choisir un équipement spécifique.
+*   `/oorbis start` : Lancer manuellement le match.
 *   `/oorbis stop` : (Admin) Arrêter la partie et réinitialiser le monde/joueurs.
-
-### ⚙️ Configuration (Admin)
-La configuration utilise les sélections HyUI ou la position du joueur.
-*   `/oorbis config setzone <attaquant|defenseur>` : Définit la zone de spawn d'une équipe (via sélection).
-*   `/oorbis config setrelic <1|2>` : Définit la position d'apparition d'une relique (votre position).
-*   `/oorbis config setnpcspawn <1|2>` : Définit le point de spawn des gardes PNJs (votre position).
-*   `/oorbis config setdeposit` : Définit la zone où les attaquants doivent ramener les reliques (via sélection).
-*   `/oorbis config save` : **Indispensable** pour sauvegarder les changements dans le fichier de config.

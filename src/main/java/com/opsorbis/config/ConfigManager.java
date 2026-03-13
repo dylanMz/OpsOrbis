@@ -41,6 +41,13 @@ public class ConfigManager {
                 if (this.config == null) {
                     this.config = new GameConfig();
                 }
+                
+                // Si la section "language" n'existe pas dans le fichier, on la rajoute en sauvegardant
+                if (!json.contains("\"language\"")) {
+                    save();
+                    HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Section 'language' ajoutée à la configuration.");
+                }
+
                 HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Configuration chargée avec succès.");
             } else {
                 HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Aucune config trouvée, utilisation des valeurs par défaut.");

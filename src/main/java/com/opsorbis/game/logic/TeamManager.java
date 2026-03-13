@@ -82,18 +82,12 @@ public class TeamManager {
         GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
 
         if (estDansEquipe(joueur, "Attaquant")) {
-            joueur.sendMessage(Message.join(
-                Message.raw("Vous êtes ").color(Color.WHITE),
-                Message.raw("Attaquant").color(new Color(255, 160, 0)),
-                Message.raw(" ! Volez les 2 reliques des défenseurs.").color(Color.WHITE)
-            ));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("prefix"));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("team_assign_attacker"));
             teleporterJoueur(joueur, config.getBoxCenter(config.getBlueZone()));
         } else if (estDansEquipe(joueur, "Defenseur")) {
-            joueur.sendMessage(Message.join(
-                Message.raw("Vous êtes ").color(Color.WHITE),
-                Message.raw("Défenseur").color(new Color(0, 200, 100)),
-                Message.raw(" ! Protégez vos reliques.").color(Color.WHITE)
-            ));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("prefix"));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("team_assign_defender"));
             teleporterJoueur(joueur, config.getBoxCenter(config.getRedZone()));
         }
     }

@@ -30,6 +30,9 @@ public class GameConfig {
     // Zone de dépôt des attaquants (pour capter les reliques)
     private Box depositZone;
 
+    // Langue du mod
+    private String language = "fr";
+
     public GameConfig() {
         // Valeurs par défaut
         this.attackerZone  = new Box(90, 45, 90, 110, 55, 110);
@@ -69,6 +72,9 @@ public class GameConfig {
 
     public Box getDepositZone() { return depositZone; }
     public void setDepositZone(Box depositZone) { this.depositZone = depositZone; }
+
+    public String getLanguage() { return language; }
+    public void setLanguage(String language) { this.language = language; }
 
     // ── Alias pour la compatibilité avec l'ancien code ───────────────────────
 

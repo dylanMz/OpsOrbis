@@ -1,5 +1,6 @@
 package com.opsorbis.kits;
 
+import com.opsorbis.OpsOrbis;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -42,8 +43,8 @@ public class KitManager {
     public void choisirKit(Player joueur, KitType kit) {
         joueursKits.put(joueur.getReference(), kit);
         joueur.sendMessage(Message.join(
-            Message.raw("Vous avez sélectionné le kit ").color(Color.WHITE),
-            Message.raw(kit.getNom()).color(Color.ORANGE)
+            OpsOrbis.get().getLangManager().get("prefix"),
+            OpsOrbis.get().getLangManager().get("kit_selected", kit.getNom())
         ));
     }
 
@@ -74,7 +75,7 @@ public class KitManager {
                     donnerKitArbaletrier(joueur, inventaire);
                     break;
             }
-            joueur.sendMessage(Message.raw("Votre équipement a été distribué !").color(Color.GREEN));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("kit_distributed"));
         });
     }
 

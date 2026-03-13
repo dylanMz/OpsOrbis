@@ -1,5 +1,7 @@
 package com.opsorbis.game.ui;
 
+import com.opsorbis.OpsOrbis;
+import com.opsorbis.config.LangManager;
 import com.opsorbis.game.logic.GameManager;
 import com.opsorbis.game.logic.RelicManager;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
@@ -73,44 +75,22 @@ public class OpsOrbisScoreboard extends CustomUIHud {
 
         long tempsRestantSec = gameManager.getTempsRestantManche();
         String tempsFormate = String.format("%02d:%02d", tempsRestantSec / 60, tempsRestantSec % 60);
+        String tempsCouleur = (tempsRestantSec <= 60) ? "&c" : "&e";
 
         builder.set("#ScoreBleu.TextSpans", Message.join(
-            Message.raw("Manche: ").color(Color.LIGHT_GRAY),
-            Message.raw(round + "/" + GameManager.ROUNDS_MAX).color(Color.YELLOW),
-            Message.raw(" | Tps: ").color(Color.LIGHT_GRAY),
-            Message.raw(tempsFormate).color(tempsRestantSec <= 60 ? Color.RED : Color.YELLOW)
+            OpsOrbis.get().getLangManager().get("scoreboard_round", round, GameManager.ROUNDS_MAX),
+            OpsOrbis.get().getLangManager().get("scoreboard_time", tempsCouleur + tempsFormate)
         ));
 
         builder.set("#ScoreRouge.TextSpans", Message.join(
-            Message.raw("Équipe 1: ").color(Color.CYAN),
-            Message.raw(String.valueOf(eq1Score)).color(Color.WHITE),
-            Message.raw(" | Équipe 2: ").color(Color.RED),
-            Message.raw(String.valueOf(eq2Score)).color(Color.WHITE)
+            OpsOrbis.get().getLangManager().get("scoreboard_team1", eq1Score),
+            OpsOrbis.get().getLangManager().get("scoreboard_team2", eq2Score)
         ));
 
-        builder.set("#RelicB.TextSpans", Message.join(
-            Message.raw("Reliques: ").color(Color.LIGHT_GRAY),
-            Message.raw(capturees + "/2 capturées").color(new Color(255, 160, 0))
-        ));
+        builder.set("#RelicB.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_relics", capturees));
 
-        builder.set("#RelicR.TextSpans", Message.join(
-            Message.raw("Relique 1: ").color(Color.LIGHT_GRAY),
-            Message.raw(rm.getRelicB1Status()).color(statusColor(rm.getRelicB1Status()))
-        ));
+        builder.set("#RelicR.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_relic_status", 1, rm.getRelicB1Status()));
 
-        builder.set("#PlayerCount.TextSpans", Message.join(
-            Message.raw("Relique 2: ").color(Color.LIGHT_GRAY),
-            Message.raw(rm.getRelicB2Status()).color(statusColor(rm.getRelicB2Status()))
-        ));
-    }
-
-    private Color statusColor(String status) {
-        switch (status) {
-            case "Base":     return new Color(0, 200, 100);
-            case "Terrain":  return new Color(255, 220, 0);
-            case "Volée":    return new Color(255, 80, 80);
-            case "Capturée": return new Color(255, 160, 0);
-            default:         return Color.LIGHT_GRAY;
-        }
+        builder.set("#PlayerCount.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_relic_status", 2, rm.getRelicB2Status()));
     }
 }

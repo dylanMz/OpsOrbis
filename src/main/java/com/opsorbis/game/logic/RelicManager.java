@@ -148,15 +148,15 @@ public class RelicManager {
 
         // Vérifications attaquant
         if (estMemeJoueur(joueur, carrierRelic1) || estMemeJoueur(joueur, carrierRelic2)) {
-            joueur.sendMessage(Message.raw("Vous portez déjà une relique !").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("relic_carrier_already"));
             return;
         }
         if (numero == 1 && carrierRelic1 != null) {
-            joueur.sendMessage(Message.raw("Cette relique est déjà portée par un coéquipier !").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("relic_carrier_teammate"));
             return;
         }
         if (numero == 2 && carrierRelic2 != null) {
-            joueur.sendMessage(Message.raw("Cette relique est déjà portée par un coéquipier !").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("relic_carrier_teammate"));
             return;
         }
 
@@ -164,28 +164,23 @@ public class RelicManager {
         if (numero == 1) { carrierRelic1 = joueur; relic1DroppedPos = null; }
         if (numero == 2) { carrierRelic2 = joueur; relic2DroppedPos = null; }
 
-        OpsOrbis.get().getGameManager().diffuserMessage(monde, Message.join(
-            Message.raw("[!] ").color(Color.ORANGE),
-            Message.raw(joueur.getDisplayName()).color(Color.YELLOW),
-            Message.raw(etaitAuSol
-                ? " récupère la Relique " + numero + " au sol !"
-                : " vole la Relique " + numero + " !")
-                .color(Color.ORANGE)
-        ));
+        OpsOrbis.get().getGameManager().diffuserMessage(monde, 
+            OpsOrbis.get().getLangManager().get("relic_picked_up_global", joueur.getDisplayName(), numero)
+        );
 
         // Annonce visuelle au centre de l'écran
         OpsOrbis.get().getGameManager().diffuserAnnonceEquipe(monde, "Attaquant",
-            Message.raw("RELIQUE RÉCUPÉRÉE").color(Color.GREEN),
-            Message.raw("Rapportez-la vite au dépôt !").color(Color.WHITE)
+            OpsOrbis.get().getLangManager().get("relic_stolen_title"),
+            OpsOrbis.get().getLangManager().get("relic_stolen_subtitle")
         );
         
         OpsOrbis.get().getGameManager().diffuserAnnonceEquipe(monde, "Defenseur",
-            Message.raw("ALERTE : RELIQUE VOLÉE").color(Color.RED),
-            Message.raw("Interceptez le porteur immédiatement !").color(Color.WHITE)
+            OpsOrbis.get().getLangManager().get("relic_alert_title"),
+            OpsOrbis.get().getLangManager().get("relic_alert_subtitle")
         );
 
 
-        joueur.sendMessage(Message.raw("Relique " + numero + " en main ! Courez à votre base !").color(Color.YELLOW));
+        joueur.sendMessage(OpsOrbis.get().getLangManager().get("relic_in_hand", numero));
         supprimerEntiteRelique(numero, buffer);
 
         Store<EntityStore> stockage = monde.getEntityStore().getStore();
@@ -213,7 +208,7 @@ public class RelicManager {
         monde.execute(() -> spawnRelic(monde.getEntityStore().getStore(), positionFinale, numeroFinal));
 
         OpsOrbis.get().getGameManager().diffuserMessage(monde,
-            Message.raw("[Défense] Un défenseur a remis la Relique " + numero + " à la base !").color(new Color(0, 200, 100)));
+            OpsOrbis.get().getLangManager().get("relic_returned_chat", numero));
 
         OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
     }
@@ -239,10 +234,9 @@ public class RelicManager {
             joueur.getInventory().getCombinedEverything().removeItemStack(new ItemStack("Bench_Memories", 1));
             if (estMemeJoueur(joueur, carrierRelic1)) carrierRelic1 = null; else carrierRelic2 = null;
 
-            OpsOrbis.get().getGameManager().diffuserMessage(monde, Message.join(
-                Message.raw("[Attaque] Relique " + numeroRelique + " capturée ! ").color(new Color(255, 160, 0)),
-                Message.raw(relicsCapturees + "/2 reliques.").color(Color.WHITE)
-            ));
+            OpsOrbis.get().getGameManager().diffuserMessage(monde, 
+                OpsOrbis.get().getLangManager().get("relic_captured_chat", numeroRelique, relicsCapturees)
+            );
 
             OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
             verifierVictoire(monde, buffer);
@@ -288,11 +282,9 @@ public class RelicManager {
             OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
         });
 
-        OpsOrbis.get().getGameManager().diffuserMessage(monde, Message.join(
-            Message.raw("[Mort] ").color(Color.RED),
-            Message.raw(mort.getDisplayName()).color(Color.YELLOW),
-            Message.raw(" a été éliminé ! La Relique " + numeroRelique + " est au sol — les défenseurs peuvent la récupérer !").color(Color.ORANGE)
-        ));
+        OpsOrbis.get().getGameManager().diffuserMessage(monde, 
+            OpsOrbis.get().getLangManager().get("relic_dropped_chat", mort.getDisplayName(), numeroRelique)
+        );
     }
     
     /**
@@ -354,7 +346,7 @@ public class RelicManager {
         if (buffer != null) {
             try { if (relic1Ref != null) buffer.removeEntity(relic1Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
             try { if (relic2Ref != null) buffer.removeEntity(relic2Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
-            nettoyerReliquesCible(store);
+            // On ne fait PAS de nettoyerReliquesCible ici pour éviter le crash en plein tick
         } else {
             try { if (relic1Ref != null) store.removeEntity(relic1Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
             try { if (relic2Ref != null) store.removeEntity(relic2Ref, RemoveReason.REMOVE); } catch (Exception ignored) {}
@@ -395,17 +387,17 @@ public class RelicManager {
      * Capturée → déposée en base attaquants
      */
     public String getRelicB1Status() {
-        if (relic1Capturee) return "Capturée";
-        if (carrierRelic1 != null) return "Volée";
-        if (relic1DroppedPos != null) return "Terrain";
-        return "Base"; // Si elle despawn (chunk lointain), on la considère théoriquement à la base
+        if (relic1Capturee) return OpsOrbis.get().getLangManager().getRaw("relic_status_captured");
+        if (carrierRelic1 != null) return OpsOrbis.get().getLangManager().getRaw("relic_status_carried");
+        if (relic1DroppedPos != null) return OpsOrbis.get().getLangManager().getRaw("relic_status_dropped");
+        return OpsOrbis.get().getLangManager().getRaw("relic_status_at_base");
     }
 
     public String getRelicB2Status() {
-        if (relic2Capturee) return "Capturée";
-        if (carrierRelic2 != null) return "Volée";
-        if (relic2DroppedPos != null) return "Terrain";
-        return "Base";
+        if (relic2Capturee) return OpsOrbis.get().getLangManager().getRaw("relic_status_captured");
+        if (carrierRelic2 != null) return OpsOrbis.get().getLangManager().getRaw("relic_status_carried");
+        if (relic2DroppedPos != null) return OpsOrbis.get().getLangManager().getRaw("relic_status_dropped");
+        return OpsOrbis.get().getLangManager().getRaw("relic_status_at_base");
     }
 
     public String getRelicR1Status() { return "—"; }
