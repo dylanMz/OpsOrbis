@@ -2,8 +2,12 @@ plugins {
     id 'java'
 }
 
-group = 'com.experience'
+group = 'com.opsorbis'
 version = '1.0-SNAPSHOT'
+
+base {
+    archivesName = 'OpsOrbis'
+}
 
 repositories {
     mavenCentral()
