@@ -90,12 +90,31 @@ jobs:
           break
         done
 
+    - name: Generate Changelog
+      id: changelog
+      shell: bash
+      run: |
+        git fetch --tags --unshallow || git fetch --tags
+        LAST_TAG=$(git tag --sort=-v:refname | head -n 2 | tail -n 1)
+        if [ -z "$LAST_TAG" ] || [ "$LAST_TAG" = "${{ steps.set_tag.outputs.tag_name }}" ]; then
+          echo "history=$(git log --oneline -n 10)" >> $GITHUB_OUTPUT
+        else
+          # Utilisation d'un délimiteur pour les messages multilignes
+          echo "history<<EOF" >> $GITHUB_OUTPUT
+          git log ${LAST_TAG}..HEAD --pretty=format:"* %s (%h)" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+
     - name: Upload Release to GitHub
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.set_tag.outputs.tag_name }}
         name: OpsOrbis ${{ steps.set_tag.outputs.tag_name }}
+        body: |
+          ## Changelog
+          ${{ steps.changelog.outputs.history }}
         draft: false
         prerelease: ${{ steps.set_tag.outputs.is_prerelease == 'true' }}
         files: build/libs/*.jar
-        generate_release_notes: true
+        generate_release_notes: false

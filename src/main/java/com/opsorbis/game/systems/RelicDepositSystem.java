@@ -1,7 +1,7 @@
 package com.opsorbis.game.systems;
 
 import com.opsorbis.OpsOrbis;
-import com.opsorbis.config.GameConfig;
+import com.opsorbis.config.MapConfig;
 import com.opsorbis.game.logic.GameManager;
 import com.opsorbis.game.logic.RelicManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;

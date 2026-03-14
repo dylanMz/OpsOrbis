@@ -35,11 +35,11 @@ public class TeamAttitudeProvider implements IAttitudeProvider {
             Player joueurCible = accessor.getComponent(targetRef, Player.getComponentType());
             if (joueurCible != null) {
                 // Les PNJs protègent les défenseurs → amicaux
-                if (teamManager.estDansEquipe(joueurCible, "Defenseur")) {
+                if (teamManager.estDansEquipe(joueurCible, PlayerRole.DEFENSEUR)) {
                     return Attitude.FRIENDLY;
                 }
                 // Les PNJs attaquent les attaquants → hostiles
-                if (teamManager.estDansEquipe(joueurCible, "Attaquant")) {
+                if (teamManager.estDansEquipe(joueurCible, PlayerRole.ATTAQUANT)) {
                     return Attitude.HOSTILE;
                 }
             }

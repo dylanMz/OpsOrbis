@@ -51,12 +51,15 @@ public class OpsOrbis extends JavaPlugin {
         
         // 1. Initialisation de la configuration
         this.configManager = new ConfigManager();
-        this.langManager = new LangManager(configManager.getConfig().getLanguage());
+        this.langManager = new LangManager(configManager.getGlobalConfig().getLanguage());
 
         // 2. Initialisation du gestionnaire de jeu
         this.gameManager = new GameManager(this);
 
-        // 3. Enregistrement des commandes
+        // 3. Enregistrement des placeholders globaux
+        registerPlaceholders();
+
+        // 4. Enregistrement des commandes
         getCommandRegistry().registerCommand(new GameCommand(gameManager));
 
         // 4. Enregistrement des systèmes ECS (Dommages, Pickups, Dépôts)
@@ -157,6 +160,19 @@ public class OpsOrbis extends JavaPlugin {
 
     public LangManager getLangManager() {
         return langManager;
+    }
+
+    private void registerPlaceholders() {
+        if (langManager == null || gameManager == null) return;
+
+        langManager.registerGlobal("round", () -> gameManager.getRoundActuel());
+        langManager.registerGlobal("max_round", () -> configManager.getGlobalConfig().getMaxRounds());
+        langManager.registerGlobal("score1", () -> gameManager.getTeamManager().getScoreEquipe1());
+        langManager.registerGlobal("score2", () -> gameManager.getTeamManager().getScoreEquipe2());
+        langManager.registerGlobal("time", () -> {
+            long t = gameManager.getTempsRestantManche();
+            return String.format("%02d:%02d", t / 60, t % 60);
+        });
     }
 
     public void runDelayed(long delayMs, Runnable task) {

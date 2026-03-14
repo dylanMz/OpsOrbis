@@ -1,7 +1,7 @@
 package com.opsorbis.game.logic;
 
 import com.opsorbis.OpsOrbis;
-import com.opsorbis.config.GameConfig;
+import com.opsorbis.config.MapConfig;
 import com.hypixel.hytale.server.core.entity.Entity;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.npc.INonPlayerCharacter;
@@ -84,7 +84,7 @@ public class NPCManager {
      * Fait apparaître les PNJ directement (doit être appelé sur le thread monde).
      */
     public void faireApparaitrePNJ_Direct(Store<EntityStore> store) {
-        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
+        MapConfig config = OpsOrbis.get().getConfigManager().getMapConfig();
         String npcType = "SKELETON_BURNT_ARCHER";
 
             // ==== SPAWN PNJ BLEU ====
@@ -172,7 +172,7 @@ public class NPCManager {
      */
     private void nettoyerPNJCible(Store<EntityStore> store) {
         if (store == null) return;
-        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
+        MapConfig config = OpsOrbis.get().getConfigManager().getMapConfig();
         Vector3d sB = config.getBlueNpcSpawn();
         Vector3d sR = config.getRedNpcSpawn();
         

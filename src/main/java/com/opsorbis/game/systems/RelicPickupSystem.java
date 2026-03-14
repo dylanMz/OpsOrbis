@@ -1,7 +1,7 @@
 package com.opsorbis.game.systems;
 
 import com.opsorbis.OpsOrbis;
-import com.opsorbis.config.GameConfig;
+import com.opsorbis.config.MapConfig;
 import com.opsorbis.game.logic.GameManager;
 import com.opsorbis.game.logic.RelicManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -52,7 +52,7 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
         RelicManager rm = gameManager.getRelicManager();
         if (rm == null) return;
 
-        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
+        MapConfig config = OpsOrbis.get().getConfigManager().getMapConfig();
 
         for (int i = 0; i < chunk.size(); i++) {
             // Si le joueur est mort, il ne peut pas ramasser d'objet

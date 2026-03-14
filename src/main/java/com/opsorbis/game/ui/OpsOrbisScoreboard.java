@@ -78,19 +78,19 @@ public class OpsOrbisScoreboard extends CustomUIHud {
         String tempsCouleur = (tempsRestantSec <= 60) ? "&c" : "&e";
 
         builder.set("#ScoreBleu.TextSpans", Message.join(
-            OpsOrbis.get().getLangManager().get("scoreboard_round", round, GameManager.ROUNDS_MAX),
-            OpsOrbis.get().getLangManager().get("scoreboard_time", tempsCouleur + tempsFormate)
+            OpsOrbis.get().getLangManager().get("scoreboard_round"),
+            OpsOrbis.get().getLangManager().get("scoreboard_time")
         ));
 
         builder.set("#ScoreRouge.TextSpans", Message.join(
-            OpsOrbis.get().getLangManager().get("scoreboard_team1", eq1Score),
-            OpsOrbis.get().getLangManager().get("scoreboard_team2", eq2Score)
+            OpsOrbis.get().getLangManager().get("scoreboard_team1"),
+            OpsOrbis.get().getLangManager().get("scoreboard_team2")
         ));
 
-        builder.set("#RelicB.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_relics", capturees));
+        builder.set("#RelicB.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_relics", "count", capturees));
 
-        builder.set("#RelicR.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_relic_status", 1, rm.getRelicB1Status()));
+        builder.set("#RelicR.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_relic_status", "number", 1, "status", rm.getRelicB1Status()));
 
-        builder.set("#PlayerCount.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_relic_status", 2, rm.getRelicB2Status()));
+        builder.set("#PlayerCount.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_relic_status", "number", 2, "status", rm.getRelicB2Status()));
     }
 }

@@ -1,8 +1,10 @@
 package com.opsorbis.commands;
 
 import com.opsorbis.OpsOrbis;
-import com.opsorbis.config.GameConfig;
+import com.opsorbis.config.LangManager;
+import com.opsorbis.config.MapConfig;
 import com.opsorbis.game.logic.GameManager;
+import com.opsorbis.game.logic.PlayerRole;
 import com.opsorbis.kits.KitManager;
 import com.opsorbis.roles.RolesManager;
 import com.hypixel.hytale.math.shape.Box;
@@ -29,6 +31,7 @@ import java.awt.*;
  *   /oorbis config setnpcspawn <1|2>
  *   /oorbis config setdeposit
  *   /oorbis config save
+ *   /oorbis reload                            — Recharger le plugin (Config & Lang)
  */
 public class GameCommand extends CommandBase {
 
@@ -47,8 +50,9 @@ public class GameCommand extends CommandBase {
         Player joueur = (Player) ctx.sender();
         String[] args = ctx.getInputString().trim().split("\\s+");
 
+        LangManager lang = OpsOrbis.get().getLangManager();
         if (args.length < 2) {
-            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_usage_main"));
+            joueur.sendMessage(lang.get(joueur, "cmd_usage_main"));
             return;
         }
 
@@ -68,7 +72,7 @@ public class GameCommand extends CommandBase {
             case "role":
                 joueur.getWorld().execute(() -> {
                     if (!gameManager.getTeamManager().isJoueurDansMatch(joueur)) {
-                        joueur.sendMessage(Message.raw("Vous devez d'abord rejoindre la partie avec /oorbis join").color(Color.RED));
+                        joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_not_joined"));
                         return;
                     }
                     handleRoleCommand(joueur, args);
@@ -77,7 +81,7 @@ public class GameCommand extends CommandBase {
             case "kit":
                 joueur.getWorld().execute(() -> {
                     if (!gameManager.getTeamManager().isJoueurDansMatch(joueur)) {
-                        joueur.sendMessage(Message.raw("Vous devez d'abord rejoindre la partie avec /oorbis join").color(Color.RED));
+                        joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_not_joined"));
                         return;
                     }
                     handleKitCommand(joueur, args);
@@ -100,14 +104,24 @@ public class GameCommand extends CommandBase {
             case "config":
                 handleConfigCommand(joueur, args);
                 break;
+            case "reload":
+                if (joueur.hasPermission("experience.admin")) {
+                    OpsOrbis.get().getConfigManager().load();
+                    OpsOrbis.get().getLangManager().load(OpsOrbis.get().getLangManager().getLanguage());
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_reload_success"));
+                } else {
+                    joueur.sendMessage(lang.get(joueur, "cmd_no_permission"));
+                }
+                break;
             default:
                 joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_unknown"));
         }
     }
 
     private void handleRoleCommand(Player joueur, String[] args) {
+        LangManager lang = OpsOrbis.get().getLangManager();
         if (args.length < 3) {
-            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_role_invalid"));
+            joueur.sendMessage(lang.get(joueur, "cmd_role_invalid"));
             return;
         }
         try {
@@ -119,8 +133,9 @@ public class GameCommand extends CommandBase {
     }
 
     private void handleKitCommand(Player joueur, String[] args) {
+        LangManager lang = OpsOrbis.get().getLangManager();
         if (args.length < 3) {
-            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_kit_usage"));
+            joueur.sendMessage(lang.get(joueur, "cmd_kit_usage"));
             return;
         }
         try {
@@ -129,13 +144,13 @@ public class GameCommand extends CommandBase {
             // Vérifier que le kit est compatible avec le rôle du joueur
             if (!gameManager.getRolesManager().peutUtiliserKit(joueur, kit)) {
                 RolesManager.RoleType roleActuel = gameManager.getRolesManager().getRole(joueur);
-                joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_kit_invalid", kit.getNom(), roleActuel.getNom()));
+                joueur.sendMessage(lang.get(joueur, "cmd_kit_invalid", "kit", kit.getNom(), "role", roleActuel.getNom()));
                 return;
             }
 
             gameManager.getKitManager().choisirKit(joueur, kit);
         } catch (IllegalArgumentException e) {
-            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_kit_invalid"));
+            joueur.sendMessage(lang.get(joueur, "cmd_kit_invalid"));
         }
     }
 
@@ -150,13 +165,13 @@ public class GameCommand extends CommandBase {
             return;
         }
 
-        GameConfig config = OpsOrbis.get().getConfigManager().getConfig();
+        MapConfig config = OpsOrbis.get().getConfigManager().getMapConfig();
         switch (args[2].toLowerCase()) {
 
             // ── Zone de spawn ──────────────────────────────────────────────────
             case "setzone":
                 if (args.length < 4) {
-                    joueur.sendMessage(Message.raw("Usage: /oorbis config setzone <attaquant|defenseur>").color(Color.RED));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_help_setzone"));
                     return;
                 }
                 setZoneDepuisSelection(joueur, args[3], config);
@@ -165,7 +180,7 @@ public class GameCommand extends CommandBase {
             // ── Position des reliques (2 reliques, côté défenseur) ─────────────
             case "setrelic":
                 if (args.length < 4) {
-                    joueur.sendMessage(Message.raw("Usage: /oorbis config setrelic <1|2>").color(Color.RED));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_help_setrelic"));
                     return;
                 }
                 setRelicDepuisPosition(joueur, args[3], config);
@@ -174,7 +189,7 @@ public class GameCommand extends CommandBase {
             // ── Spawn PNJ (1 ou 2) ──────────────────────────────────────────────
             case "setnpcspawn":
                 if (args.length < 4) {
-                    joueur.sendMessage(Message.raw("Usage: /oorbis config setnpcspawn <1|2>").color(Color.RED));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_help_setnpcspawn"));
                     return;
                 }
                 setNpcSpawnDepuisPosition(joueur, args[3], config);
@@ -199,46 +214,45 @@ public class GameCommand extends CommandBase {
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private void envoyerAideConfig(Player joueur) {
+        LangManager lang = OpsOrbis.get().getLangManager();
         joueur.sendMessage(Message.join(
-            Message.raw("Config — sous-commandes :").color(Color.YELLOW),
-            Message.raw("\n • setzone <attaquant|defenseur>  — Zone de spawn").color(Color.WHITE),
-            Message.raw("\n • setrelic <1|2>                — Position relique").color(Color.WHITE),
-            Message.raw("\n • setnpcspawn <1|2>             — Spawn PNJ").color(Color.WHITE),
-            Message.raw("\n • setdeposit                    — Zone dépôt attaquants").color(Color.WHITE),
-            Message.raw("\n • save                           — Sauvegarder").color(Color.WHITE)
+            lang.get("cmd_config_help_header"),
+            lang.get("cmd_config_help_setzone"),
+            lang.get("cmd_config_help_setrelic"),
+            lang.get("cmd_config_help_setnpcspawn"),
+            lang.get("cmd_config_help_setdeposit"),
+            lang.get("cmd_config_help_save")
         ));
     }
 
-    private void setZoneDepuisSelection(Player joueur, String equipe, GameConfig config) {
+    private void setZoneDepuisSelection(Player joueur, String equipe, MapConfig config) {
         SelectionProvider provider = SelectionManager.getSelectionProvider();
         if (provider == null) {
-            joueur.sendMessage(Message.raw("SelectionProvider introuvable.").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_provider_missing"));
             return;
         }
         joueur.getWorld().execute(() ->
             provider.computeSelectionCopy(joueur.getReference(), joueur, (selection) -> {
                 if (selection == null || !selection.hasSelectionBounds()) {
-                    joueur.sendMessage(Message.raw("Aucune zone sélectionnée.").color(Color.RED));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_no_selection"));
                     return;
                 }
                 Box newBox = new Box(selection.getSelectionMin().toVector3d(), selection.getSelectionMax().toVector3d());
-                switch (equipe.toLowerCase()) {
-                    case "attaquant":
-                        config.setAttackerZone(newBox);
-                        joueur.sendMessage(Message.raw("✓ Zone Attaquants définie.").color(Color.GREEN));
-                        break;
-                    case "defenseur":
-                        config.setDefenderZone(newBox);
-                        joueur.sendMessage(Message.raw("✓ Zone Défenseurs définie.").color(Color.GREEN));
-                        break;
-                    default:
-                        joueur.sendMessage(Message.raw("Équipe invalide (attaquant ou defenseur).").color(Color.RED));
+                String roleInput = equipe.toUpperCase();
+                if (roleInput.equals(PlayerRole.ATTAQUANT.name())) {
+                    config.setAttackerZone(newBox);
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_zone_attacker_success"));
+                } else if (roleInput.equals(PlayerRole.DEFENSEUR.name())) {
+                    config.setDefenderZone(newBox);
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_zone_defender_success"));
+                } else {
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_team_invalid"));
                 }
             }, joueur.getWorld().getEntityStore().getStore())
         );
     }
 
-    private void setRelicDepuisPosition(Player joueur, String num, GameConfig config) {
+    private void setRelicDepuisPosition(Player joueur, String num, MapConfig config) {
         joueur.getWorld().execute(() -> {
             TransformComponent t = joueur.getWorld().getEntityStore().getStore()
                 .getComponent(joueur.getReference(), TransformComponent.getComponentType());
@@ -247,19 +261,19 @@ public class GameCommand extends CommandBase {
             switch (num) {
                 case "1":
                     config.setRelic1(pos);
-                    joueur.sendMessage(Message.raw("✓ Relique 1 positionnée.").color(Color.GREEN));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_relic_success", "number", 1));
                     break;
                 case "2":
                     config.setRelic2(pos);
-                    joueur.sendMessage(Message.raw("✓ Relique 2 positionnée.").color(Color.GREEN));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_relic_success", "number", 2));
                     break;
                 default:
-                    joueur.sendMessage(Message.raw("Numéro invalide (1 ou 2).").color(Color.RED));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_number_invalid"));
             }
         });
     }
 
-    private void setNpcSpawnDepuisPosition(Player joueur, String num, GameConfig config) {
+    private void setNpcSpawnDepuisPosition(Player joueur, String num, MapConfig config) {
         joueur.getWorld().execute(() -> {
             TransformComponent t = joueur.getWorld().getEntityStore().getStore()
                 .getComponent(joueur.getReference(), TransformComponent.getComponentType());
@@ -268,32 +282,32 @@ public class GameCommand extends CommandBase {
             switch (num) {
                 case "1":
                     config.setNpcSpawn1(pos);
-                    joueur.sendMessage(Message.raw("✓ Spawn PNJ 1 défini.").color(Color.GREEN));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_npc_success", "number", 1));
                     break;
                 case "2":
                     config.setNpcSpawn2(pos);
-                    joueur.sendMessage(Message.raw("✓ Spawn PNJ 2 défini.").color(Color.GREEN));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_npc_success", "number", 2));
                     break;
                 default:
-                    joueur.sendMessage(Message.raw("Numéro invalide (1 ou 2).").color(Color.RED));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_number_invalid"));
             }
         });
     }
 
-    private void setDepositDepuisSelection(Player joueur, GameConfig config) {
+    private void setDepositDepuisSelection(Player joueur, MapConfig config) {
         SelectionProvider provider = SelectionManager.getSelectionProvider();
         if (provider == null) {
-            joueur.sendMessage(Message.raw("SelectionProvider introuvable.").color(Color.RED));
+            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_provider_missing"));
             return;
         }
         joueur.getWorld().execute(() ->
             provider.computeSelectionCopy(joueur.getReference(), joueur, (selection) -> {
                 if (selection == null || !selection.hasSelectionBounds()) {
-                    joueur.sendMessage(Message.raw("Aucune zone sélectionnée.").color(Color.RED));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_no_selection"));
                     return;
                 }
                 config.setDepositZone(new Box(selection.getSelectionMin().toVector3d(), selection.getSelectionMax().toVector3d()));
-                joueur.sendMessage(Message.raw("✓ Zone de dépôt Attaquants définie.").color(Color.GREEN));
+                joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_deposit_success"));
             }, joueur.getWorld().getEntityStore().getStore())
         );
     }
