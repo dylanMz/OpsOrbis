@@ -74,10 +74,8 @@ public class NPCManager {
      * Les positions sont récupérées depuis la configuration du jeu.
      */
     public void faireApparaitrePNJ() {
-        if (monde == null) return;
-        monde.execute(() -> {
-            faireApparaitrePNJ_Direct(monde.getEntityStore().getStore());
-        });
+        if (monde == null || monde.getEntityStore() == null) return;
+        monde.execute(() -> faireApparaitrePNJ_Direct(monde.getEntityStore().getStore()));
     }
 
     /**
@@ -198,16 +196,16 @@ public class NPCManager {
             
             // Suppression via Buffer (système ECS tick)
             if (buffer != null) {
-                try { if (bRef != null) buffer.removeEntity(bRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
-                try { if (rRef != null) buffer.removeEntity(rRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
+                try { if (bRef != null && bRef.isValid()) buffer.removeEntity(bRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
+                try { if (rRef != null && rRef.isValid()) buffer.removeEntity(rRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
                 // On ne fait PAS de nettoyerPNJCible(store) ici car store.forEachChunk 
                 // peut provoquer un crash s'il est appelé pendant un tick ECS (processing).
             } 
             // Suppression directe (thread simulation)
-            else {
+            else if (monde.getEntityStore() != null) {
                 Store<EntityStore> store = monde.getEntityStore().getStore();
-                try { if (bRef != null) store.removeEntity(bRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
-                try { if (rRef != null) store.removeEntity(rRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
+                try { if (bRef != null && bRef.isValid()) store.removeEntity(bRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
+                try { if (rRef != null && rRef.isValid()) store.removeEntity(rRef, RemoveReason.REMOVE); } catch (Exception ignored) {}
                 nettoyerPNJCible(store);
             }
         }

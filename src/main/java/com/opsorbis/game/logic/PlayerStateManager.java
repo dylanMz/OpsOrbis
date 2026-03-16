@@ -9,7 +9,6 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.opsorbis.utils.HytaleUtils;
 
 import java.nio.file.Files;
@@ -47,6 +46,8 @@ public class PlayerStateManager {
      */
     public void saveState(Player joueur) {
         if (joueur == null || joueur.getWorld() == null) return;
+        
+        if (joueur.getWorld().getEntityStore() == null) return;
         
         TransformComponent transform = joueur.getWorld().getEntityStore().getStore()
             .getComponent(joueur.getReference(), TransformComponent.getComponentType());
@@ -144,6 +145,7 @@ public class PlayerStateManager {
         if (joueur == null || joueur.getWorld() == null) return;
 
         UUID uuid = HytaleUtils.getPlayerUuid(joueur);
+        HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Restauration de l'état pour " + uuid);
         PlayerState state = states.remove(uuid);
         
         // Si pas en mémoire (ex: reboot après crash), chargement depuis le disque
@@ -244,6 +246,7 @@ public class PlayerStateManager {
             try {
                 // On chaîne les modifications
                 stack = stack.withQuantity(sStack.count);
+                assert stack != null;
                 stack = stack.withDurability(sStack.durability);
                 stack = stack.withMaxDurability(sStack.maxDurability);
                 

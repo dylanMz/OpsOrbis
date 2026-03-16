@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.asset.type.attitude.Attitude;
 import com.hypixel.hytale.server.npc.role.Role;
 import com.hypixel.hytale.server.npc.blackboard.view.attitude.IAttitudeProvider;
+import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 /**
  * Provider d'Attitude pour les PNJ.
@@ -25,23 +26,21 @@ public class TeamAttitudeProvider implements IAttitudeProvider {
     }
 
     @Override
-    public Attitude getAttitude(Ref<EntityStore> npcRef, Role role, Ref<EntityStore> targetRef, ComponentAccessor<EntityStore> accessor) {
+    public Attitude getAttitude(@NonNullDecl Ref<EntityStore> npcRef, @NonNullDecl Role role, @NonNullDecl Ref<EntityStore> targetRef, @NonNullDecl ComponentAccessor<EntityStore> accessor) {
         // Vérifier que c'est bien un de nos PNJs
         boolean estPnjConnu = npcManager.estPnjBleu(npcRef) || npcManager.estPnjRouge(npcRef);
         if (!estPnjConnu) return null;
 
         // Vérifier si la cible est un joueur
-        if (targetRef != null && accessor != null) {
-            Player joueurCible = accessor.getComponent(targetRef, Player.getComponentType());
-            if (joueurCible != null) {
-                // Les PNJs protègent les défenseurs → amicaux
-                if (teamManager.estDansEquipe(joueurCible, PlayerRole.DEFENSEUR)) {
-                    return Attitude.FRIENDLY;
-                }
-                // Les PNJs attaquent les attaquants → hostiles
-                if (teamManager.estDansEquipe(joueurCible, PlayerRole.ATTAQUANT)) {
-                    return Attitude.HOSTILE;
-                }
+        Player joueurCible = accessor.getComponent(targetRef, Player.getComponentType());
+        if (joueurCible != null) {
+            // Les PNJs protègent les défenseurs → amicaux
+            if (teamManager.estDansCamp(joueurCible, PlayerCamp.DEFENSEUR)) {
+                return Attitude.FRIENDLY;
+            }
+            // Les PNJs attaquent les attaquants → hostiles
+            if (teamManager.estDansCamp(joueurCible, PlayerCamp.ATTAQUANT)) {
+                return Attitude.HOSTILE;
             }
         }
 

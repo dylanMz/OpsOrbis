@@ -1,7 +1,6 @@
 package com.opsorbis.game.ui;
 
 import com.opsorbis.OpsOrbis;
-import com.opsorbis.config.LangManager;
 import com.opsorbis.game.logic.GameManager;
 import com.opsorbis.game.logic.RelicManager;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
@@ -9,11 +8,10 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
-import java.awt.Color;
 
 /**
- * Scoreboard HUD simplifié.
- * Utilise la visibilité pour éviter les crashs de retrait CustomUI.
+ * Scoreboard HUD simplifi&eacute;.
+ * Utilise la visibilit&eacute; pour &eacute;viter les crashs de retrait CustomUI.
  */
 public class OpsOrbisScoreboard extends CustomUIHud {
 
@@ -56,8 +54,8 @@ public class OpsOrbisScoreboard extends CustomUIHud {
         
         try {
             Player p = gameManager.getTeamManager().getJoueurParRef(this.getPlayerRef());
-            if (p != null && p.getReference() != null && p.getReference().isValid()) {
-                this.update(false, builder);
+            if (p != null && p.getWorld() != null && p.getReference() != null && p.getReference().isValid()) {
+                p.getWorld().execute(() -> this.update(false, builder));
             }
         } catch (Exception ignored) {}
         
@@ -75,11 +73,11 @@ public class OpsOrbisScoreboard extends CustomUIHud {
 
         long tempsRestantSec = gameManager.getTempsRestantManche();
         String tempsFormate = String.format("%02d:%02d", tempsRestantSec / 60, tempsRestantSec % 60);
-        String tempsCouleur = (tempsRestantSec <= 60) ? "&c" : "&e";
+        String tempsCouleur = (tempsRestantSec <= 30) ? "&c" : "&e";
 
         builder.set("#ScoreBleu.TextSpans", Message.join(
             OpsOrbis.get().getLangManager().get("scoreboard_round"),
-            OpsOrbis.get().getLangManager().get("scoreboard_time")
+            OpsOrbis.get().getLangManager().get("scoreboard_time", "time", tempsCouleur + tempsFormate)
         ));
 
         builder.set("#ScoreRouge.TextSpans", Message.join(
@@ -92,5 +90,17 @@ public class OpsOrbisScoreboard extends CustomUIHud {
         builder.set("#RelicR.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_relic_status", "number", 1, "status", rm.getRelicB1Status()));
 
         builder.set("#PlayerCount.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_relic_status", "number", 2, "status", rm.getRelicB2Status()));
+
+        // Injection du camp et de l'équipe
+        Player p = gameManager.getTeamManager().getJoueurParRef(this.getPlayerRef());
+        if (p != null) {
+            String campTrad = OpsOrbis.get().getLangManager().getRaw(gameManager.getTeamManager().getCamp(p).getLangKey());
+            String teamTrad = gameManager.getTeamManager().getEquipeAttaquants().contains(p) || gameManager.getTeamManager().getEquipeDefenseurs().contains(p) 
+                ? (gameManager.getTeamManager().getEquipeAttaquants().contains(p) == gameManager.getTeamManager().isEquipe1Attaquant() ? OpsOrbis.get().getLangManager().getRaw("team_1_name") : OpsOrbis.get().getLangManager().getRaw("team_2_name"))
+                : OpsOrbis.get().getLangManager().getRaw("camp_spectateur");
+            
+            builder.set("#PlayerCamp.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_player_role", "camp", campTrad));
+            builder.set("#TeamName.TextSpans", OpsOrbis.get().getLangManager().get("scoreboard_team_label", "team", teamTrad));
+        }
     }
 }

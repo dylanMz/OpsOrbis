@@ -4,12 +4,10 @@ import com.opsorbis.OpsOrbis;
 import com.opsorbis.config.LangManager;
 import com.opsorbis.config.MapConfig;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.opsorbis.utils.HytaleUtils;
-import java.awt.Color;
-import java.util.Objects;
+
 import java.util.UUID;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -73,26 +71,36 @@ public class TeamManager {
         
         // Mise à jour du cache (doit être fait sur le thread du monde)
         UUID uuid = HytaleUtils.getPlayerUuid(joueur);
-        if (uuid != null) uuidMap.put(uuid, joueur);
+        if (uuid != null) {
+            uuidMap.put(uuid, joueur);
+            // Sauvegarder l'état du joueur s'il rejoint le match
+            if (!OpsOrbis.get().getGameManager().getPlayerStateManager().hasSavedState(uuid)) {
+                OpsOrbis.get().getGameManager().getPlayerStateManager().saveState(joueur);
+                // On vide l'inventaire immédiatement après la sauvegarde pour le mode de jeu
+                if (joueur.getInventory() != null) {
+                    joueur.getInventory().clear();
+                }
+            }
+        }
 
         // Annonce du rôle actuel au joueur et téléportation
         informerEtTeleporterSpawner(joueur);
     }
 
     /**
-     * Envoie un message au joueur pour lui rappeler son rôle et le téléporte à son spawn.
+     * Envoie un message au joueur pour lui rappeler son camp et le téléporte à son spawn.
      * Utilisé lors de la connexion ou à chaque début de manche.
      */
     public void informerEtTeleporterSpawner(Player joueur) {
         MapConfig config = OpsOrbis.get().getConfigManager().getMapConfig();
-        PlayerRole role = getRole(joueur);
+        PlayerCamp camp = getCamp(joueur);
 
         LangManager lang = OpsOrbis.get().getLangManager();
-        if (role == PlayerRole.ATTAQUANT) {
+        if (camp == PlayerCamp.ATTAQUANT) {
             joueur.sendMessage(lang.get(joueur, "prefix"));
             joueur.sendMessage(lang.get(joueur, "team_assign_attacker"));
             teleporterJoueur(joueur, config.getBoxCenter(config.getBlueZone()));
-        } else if (role == PlayerRole.DEFENSEUR) {
+        } else if (camp == PlayerCamp.DEFENSEUR) {
             joueur.sendMessage(lang.get(joueur, "prefix"));
             joueur.sendMessage(lang.get(joueur, "team_assign_defender"));
             teleporterJoueur(joueur, config.getBoxCenter(config.getRedZone()));
@@ -119,7 +127,7 @@ public class TeamManager {
     }
 
     /**
-     * Téléporte le joueur au spawn de son équipe ACTUELLE (Attaquant ou Défenseur).
+     * Téléporte le joueur au spawn de son camp ACTUEL (Attaquant ou Défenseur).
      * @param joueur Le joueur à téléporter.
      */
     public void teleporterAuSpawn(Player joueur) {
@@ -131,13 +139,13 @@ public class TeamManager {
     }
 
     /**
-     * Vérifie si un joueur a le rôle spécifié sur LA MANCHE EN COURS.
+     * Vérifie si un joueur a le camp spécifié sur LA MANCHE EN COURS.
      * @param joueur Le joueur.
-     * @param role Le rôle à vérifier.
+     * @param camp Le camp à vérifier.
      */
-    public boolean estDansEquipe(Player joueur, PlayerRole role) {
-        if (role == PlayerRole.ATTAQUANT) return contientJoueur(getEquipeAttaquants(), joueur);
-        if (role == PlayerRole.DEFENSEUR) return contientJoueur(getEquipeDefenseurs(), joueur);
+    public boolean estDansCamp(Player joueur, PlayerCamp camp) {
+        if (camp == PlayerCamp.ATTAQUANT) return contientJoueur(getEquipeAttaquants(), joueur);
+        if (camp == PlayerCamp.DEFENSEUR) return contientJoueur(getEquipeDefenseurs(), joueur);
         return false;
     }
 
@@ -146,8 +154,7 @@ public class TeamManager {
      */
     public boolean sontDansLaMemeEquipe(Player joueur1, Player joueur2) {
         if (contientJoueur(equipe1, joueur1) && contientJoueur(equipe1, joueur2)) return true;
-        if (contientJoueur(equipe2, joueur1) && contientJoueur(equipe2, joueur2)) return true;
-        return false;
+        return contientJoueur(equipe2, joueur1) && contientJoueur(equipe2, joueur2);
     }
 
     /**
@@ -176,12 +183,12 @@ public class TeamManager {
 
     /**
      * Ajoute un point au score de l'équipe qui a remporté la manche.
-     * @param roleVainqueurRound Le rôle vainqueur.
+     * @param campVainqueurRound Le camp vainqueur.
      */
-    public void ajouterPointEquipe(PlayerRole roleVainqueurRound) {
-        if (PlayerRole.ATTAQUANT == roleVainqueurRound) {
+    public void ajouterPointEquipe(PlayerCamp campVainqueurRound) {
+        if (PlayerCamp.ATTAQUANT == campVainqueurRound) {
             if (equipe1EstAttaquant) scoreEquipe1++; else scoreEquipe2++;
-        } else if (PlayerRole.DEFENSEUR == roleVainqueurRound) {
+        } else if (PlayerCamp.DEFENSEUR == campVainqueurRound) {
             if (equipe1EstAttaquant) scoreEquipe2++; else scoreEquipe1++;
         }
     }
@@ -210,13 +217,6 @@ public class TeamManager {
         this.uuidMap.clear();
     }
 
-    // Compatibilité avec l'ancien code existant pour préserver les signatures si besoin
-    /** @return Liste des joueurs de l'équipe Attaquante actuelle. */
-    public List<Player> getEquipeBleue() { return getEquipeAttaquants(); }
-    
-    /** @return Liste des joueurs de l'équipe Défenseuse actuelle. */
-    public List<Player> getEquipeRouge() { return getEquipeDefenseurs(); }
-
     /**
      * Vérifie de manière robuste si un joueur est dans une liste.
      */
@@ -242,14 +242,14 @@ public class TeamManager {
     }
 
     /**
-     * Retourne le rôle actuel (Attaquant/Defenseur) d'un joueur.
+     * Retourne le camp actuel (Attaquant/Defenseur) d'un joueur.
      * @param player Le joueur.
-     * @return Le rôle.
+     * @return Le camp.
      */
-    public PlayerRole getRole(Player player) {
-        if (estDansEquipe(player, PlayerRole.ATTAQUANT)) return PlayerRole.ATTAQUANT;
-        if (estDansEquipe(player, PlayerRole.DEFENSEUR)) return PlayerRole.DEFENSEUR;
-        return PlayerRole.AUCUN;
+    public PlayerCamp getCamp(Player player) {
+        if (estDansCamp(player, PlayerCamp.ATTAQUANT)) return PlayerCamp.ATTAQUANT;
+        if (estDansCamp(player, PlayerCamp.DEFENSEUR)) return PlayerCamp.DEFENSEUR;
+        return PlayerCamp.AUCUN;
     }
 
     /**

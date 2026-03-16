@@ -10,6 +10,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 /**
  * Système ECS réagissant à la mort d'un joueur (ajout du DeathComponent).
@@ -31,14 +32,14 @@ public class RelicDeathSystem extends DeathSystems.OnDeathSystem {
     }
 
     @Override
-    public void onComponentAdded(Ref<EntityStore> ref, DeathComponent death, Store<EntityStore> store, CommandBuffer<EntityStore> buffer) {
+    public void onComponentAdded(@NonNullDecl Ref<EntityStore> ref, @NonNullDecl DeathComponent death, Store<EntityStore> store, @NonNullDecl CommandBuffer<EntityStore> buffer) {
         // Récupération de l'entité joueur décédée
         Player joueur = store.getComponent(ref, Player.getComponentType());
         
         // On n'agit que si le joueur est valide et que la partie est active
         if (joueur != null && gameManager.getEtatActuel() == GameManager.GameState.EN_COURS) {
             if (gameManager.getRelicManager() != null) {
-                gameManager.getRelicManager().gererMortDuPorteur(joueur, store, buffer);
+                gameManager.getRelicManager().gererMortDuPorteur(com.opsorbis.utils.HytaleUtils.getPlayerUuid(joueur), joueur, store, buffer, null);
             }
         }
     }

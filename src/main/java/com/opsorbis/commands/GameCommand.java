@@ -4,7 +4,7 @@ import com.opsorbis.OpsOrbis;
 import com.opsorbis.config.LangManager;
 import com.opsorbis.config.MapConfig;
 import com.opsorbis.game.logic.GameManager;
-import com.opsorbis.game.logic.PlayerRole;
+import com.opsorbis.game.logic.PlayerCamp;
 import com.opsorbis.kits.KitManager;
 import com.opsorbis.roles.RolesManager;
 import com.hypixel.hytale.math.shape.Box;
@@ -21,7 +21,7 @@ import java.awt.*;
 
 /**
  * Commande principale : /oorbis
- *
+ * <p>
  * Sous-commandes disponibles :
  *   /oorbis join                              — Rejoindre une équipe
  *   /oorbis kit <guerrier|archer|mage>        — Choisir un kit
@@ -58,41 +58,40 @@ public class GameCommand extends CommandBase {
 
         switch (args[1].toLowerCase()) {
             case "join":
-                joueur.getWorld().execute(() -> {
-                    // Sauvegarder l'état du joueur s'il n'est pas déjà dans une équipe
-                    if (!gameManager.getPlayerStateManager().hasSavedState(joueur)) {
-                        gameManager.getPlayerStateManager().saveState(joueur);
-                    }
-                    // On vide l'inventaire immédiatement après la sauvegarde
-                    joueur.getInventory().clear();
-                    
-                    gameManager.getTeamManager().ajouterJoueur(joueur);
-                });
+                if (joueur.getWorld() != null) {
+                    joueur.getWorld().execute(() -> gameManager.getTeamManager().ajouterJoueur(joueur));
+                }
                 break;
             case "role":
-                joueur.getWorld().execute(() -> {
-                    if (!gameManager.getTeamManager().isJoueurDansMatch(joueur)) {
-                        joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_not_joined"));
-                        return;
-                    }
-                    handleRoleCommand(joueur, args);
-                });
+                if (joueur.getWorld() != null) {
+                    joueur.getWorld().execute(() -> {
+                        if (!gameManager.getTeamManager().isJoueurDansMatch(joueur)) {
+                            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_not_joined"));
+                            return;
+                        }
+                        handleRoleCommand(joueur, args);
+                    });
+                }
                 break;
             case "kit":
-                joueur.getWorld().execute(() -> {
-                    if (!gameManager.getTeamManager().isJoueurDansMatch(joueur)) {
-                        joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_not_joined"));
-                        return;
-                    }
-                    handleKitCommand(joueur, args);
-                });
+                if (joueur.getWorld() != null) {
+                    joueur.getWorld().execute(() -> {
+                        if (!gameManager.getTeamManager().isJoueurDansMatch(joueur)) {
+                            joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_not_joined"));
+                            return;
+                        }
+                        handleKitCommand(joueur, args);
+                    });
+                }
                 break;
             case "start":
                 if (gameManager.getTeamManager().getNombreTotalJoueurs() == 0) {
                     joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_match_empty"));
                     return;
                 }
-                joueur.getWorld().execute(() -> gameManager.demarrerMatch(joueur.getWorld()));
+                if (joueur.getWorld() != null) {
+                    joueur.getWorld().execute(() -> gameManager.demarrerMatch(joueur.getWorld()));
+                }
                 break;
             case "stop":
                 if (joueur.hasPermission("experience.admin")) {
@@ -231,31 +230,34 @@ public class GameCommand extends CommandBase {
             joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_provider_missing"));
             return;
         }
-        joueur.getWorld().execute(() ->
-            provider.computeSelectionCopy(joueur.getReference(), joueur, (selection) -> {
-                if (selection == null || !selection.hasSelectionBounds()) {
-                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_no_selection"));
-                    return;
-                }
-                Box newBox = new Box(selection.getSelectionMin().toVector3d(), selection.getSelectionMax().toVector3d());
-                String roleInput = equipe.toUpperCase();
-                if (roleInput.equals(PlayerRole.ATTAQUANT.name())) {
-                    config.setAttackerZone(newBox);
-                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_zone_attacker_success"));
-                } else if (roleInput.equals(PlayerRole.DEFENSEUR.name())) {
-                    config.setDefenderZone(newBox);
-                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_zone_defender_success"));
-                } else {
-                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_team_invalid"));
-                }
-            }, joueur.getWorld().getEntityStore().getStore())
-        );
+        if (joueur.getWorld() != null && joueur.getReference() != null) {
+            joueur.getWorld().execute(() ->
+                provider.computeSelectionCopy(joueur.getReference(), joueur, (selection) -> {
+                    if (selection == null || !selection.hasSelectionBounds()) {
+                        joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_no_selection"));
+                        return;
+                    }
+                    Box newBox = new Box(selection.getSelectionMin().toVector3d(), selection.getSelectionMax().toVector3d());
+                    String roleInput = equipe.toUpperCase();
+                    if (roleInput.equals(PlayerCamp.ATTAQUANT.name())) {
+                        config.setAttackerZone(newBox);
+                        joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_zone_attacker_success"));
+                    } else if (roleInput.equals(PlayerCamp.DEFENSEUR.name())) {
+                        config.setDefenderZone(newBox);
+                        joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_zone_defender_success"));
+                    } else {
+                        joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_team_invalid"));
+                    }
+                }, joueur.getWorld().getEntityStore().getStore())
+            );
+        }
     }
 
     private void setRelicDepuisPosition(Player joueur, String num, MapConfig config) {
-        joueur.getWorld().execute(() -> {
-            TransformComponent t = joueur.getWorld().getEntityStore().getStore()
-                .getComponent(joueur.getReference(), TransformComponent.getComponentType());
+        if (joueur.getWorld() != null && joueur.getReference() != null) {
+            joueur.getWorld().execute(() -> {
+                TransformComponent t = joueur.getWorld().getEntityStore().getStore()
+                    .getComponent(joueur.getReference(), TransformComponent.getComponentType());
             if (t == null) return;
             Vector3d pos = t.getPosition().clone();
             switch (num) {
@@ -271,12 +273,14 @@ public class GameCommand extends CommandBase {
                     joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_number_invalid"));
             }
         });
+        }
     }
 
     private void setNpcSpawnDepuisPosition(Player joueur, String num, MapConfig config) {
-        joueur.getWorld().execute(() -> {
-            TransformComponent t = joueur.getWorld().getEntityStore().getStore()
-                .getComponent(joueur.getReference(), TransformComponent.getComponentType());
+        if (joueur.getWorld() != null && joueur.getReference() != null) {
+            joueur.getWorld().execute(() -> {
+                TransformComponent t = joueur.getWorld().getEntityStore().getStore()
+                    .getComponent(joueur.getReference(), TransformComponent.getComponentType());
             if (t == null) return;
             Vector3d pos = t.getPosition().clone();
             switch (num) {
@@ -292,6 +296,7 @@ public class GameCommand extends CommandBase {
                     joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_number_invalid"));
             }
         });
+        }
     }
 
     private void setDepositDepuisSelection(Player joueur, MapConfig config) {
@@ -300,15 +305,17 @@ public class GameCommand extends CommandBase {
             joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_provider_missing"));
             return;
         }
-        joueur.getWorld().execute(() ->
-            provider.computeSelectionCopy(joueur.getReference(), joueur, (selection) -> {
-                if (selection == null || !selection.hasSelectionBounds()) {
-                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_no_selection"));
-                    return;
-                }
-                config.setDepositZone(new Box(selection.getSelectionMin().toVector3d(), selection.getSelectionMax().toVector3d()));
-                joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_deposit_success"));
-            }, joueur.getWorld().getEntityStore().getStore())
-        );
+        if (joueur.getWorld() != null && joueur.getReference() != null) {
+            joueur.getWorld().execute(() ->
+                provider.computeSelectionCopy(joueur.getReference(), joueur, (selection) -> {
+                    if (selection == null || !selection.hasSelectionBounds()) {
+                        joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_no_selection"));
+                        return;
+                    }
+                    config.setDepositZone(new Box(selection.getSelectionMin().toVector3d(), selection.getSelectionMax().toVector3d()));
+                    joueur.sendMessage(OpsOrbis.get().getLangManager().get("cmd_config_deposit_success"));
+                }, joueur.getWorld().getEntityStore().getStore())
+            );
+        }
     }
 }

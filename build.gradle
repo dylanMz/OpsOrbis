@@ -17,10 +17,12 @@ repositories {
     }
     maven { url = uri("https://jitpack.io") }
     maven { url = uri("https://www.cursemaven.com") }
+    maven { url = uri("https://maven.hytale-mods.dev/releases") }
 }
 
 dependencies {
     implementation("com.hypixel.hytale:Server:+")
+    implementation("com.buuz135:MultipleHUD:1.0.6")
 }
 
 java {
@@ -29,6 +31,6 @@ java {
     }
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }

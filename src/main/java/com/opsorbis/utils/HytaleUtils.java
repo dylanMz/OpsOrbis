@@ -13,9 +13,9 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
+
 import java.util.logging.Level;
 import java.util.UUID;
-import java.awt.Color;
 import java.util.function.Predicate;
 
 /**
@@ -89,13 +89,17 @@ public class HytaleUtils {
     public static void teleporterJoueur(Player joueur, Vector3d position) {
         if (joueur == null || position == null) return;
         World monde = joueur.getWorld();
-        if (monde != null) {
+        if (monde != null && joueur.getReference() != null && joueur.getReference().isValid()) {
             monde.execute(() -> {
-                monde.getEntityStore().getStore().addComponent(
-                    joueur.getReference(), 
-                    Teleport.getComponentType(), 
-                    Teleport.createForPlayer(position, new Vector3f(0, 0, 0))
-                );
+                Store<EntityStore> store = monde.getEntityStore().getStore();
+                // Utilisation de replaceComponent pour écraser toute téléportation pendante
+                // et createForPlayer avec le monde pour une synchronisation ID parfaite.
+                Teleport tp = Teleport.createForPlayer(monde, position, new Vector3f(0, 0, 0));
+                try {
+                    store.replaceComponent(joueur.getReference(), Teleport.getComponentType(), tp);
+                } catch (IllegalArgumentException e) {
+                    store.addComponent(joueur.getReference(), Teleport.getComponentType(), tp);
+                }
             });
         }
     }
@@ -108,8 +112,27 @@ public class HytaleUtils {
     }
 
     /**
-     * Diffuse une annonce visuelle au centre de l'écran avec un filtre sur les joueurs.
+     * Diffuse un message aux joueurs filtrés.
      */
+    public static void diffuserMessageFiltre(World monde, Predicate<Player> filtre, Message message) {
+        if (monde == null) return;
+        monde.execute(() -> {
+            Store<EntityStore> store = monde.getEntityStore().getStore();
+            Query<EntityStore> playerQuery = Archetype.of(Player.getComponentType());
+            
+            store.forEachChunk(playerQuery, (chunk, buffer) -> {
+                for (int i = 0; i < chunk.size(); i++) {
+                    Player p = chunk.getComponent(i, Player.getComponentType());
+                    if (p != null && p.getReference() != null && p.getReference().isValid() && filtre.test(p)) {
+                        try {
+                            p.sendMessage(message);
+                        } catch (Exception ignored) {}
+                    }
+                }
+            });
+        });
+    }
+
     /**
      * Diffuse une annonce visuelle au centre de l'écran avec des durées personnalisées.
      */

@@ -6,8 +6,6 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.opsorbis.utils.HytaleUtils;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Gestionnaire du Scoreboard utilisant la visibilité pour le nettoyage.
@@ -31,16 +29,14 @@ public class ScoreboardHUD {
         if (scoreboard == null) {
             scoreboard = new OpsOrbisScoreboard(ref, gameManager);
             if (joueur.getHudManager() != null) {
-                joueur.getHudManager().setCustomHud(ref, scoreboard);
+                com.buuz135.mhud.MultipleHUD.getInstance().setCustomHud(joueur, ref, "OpsOrbisScoreboard", scoreboard);
                 activeHuds.put(ref, scoreboard);
             }
         }
-        
-        if (scoreboard != null) {
-            scoreboard.setVisible(true);
-            scoreboard.show();
-            scoreboard.rafraichir();
-        }
+
+        scoreboard.setVisible(true);
+        scoreboard.show();
+        scoreboard.rafraichir();
     }
 
     public void rafraichirTous() {
