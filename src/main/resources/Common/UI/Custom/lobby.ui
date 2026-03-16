@@ -1,0 +1,100 @@
+@bg = PatchStyle(TexturePath: "bg.png");
+
+Group #MainGroup {
+    Anchor: (CenterX: 0, CenterY: 0, Width: 600, Height: 400);
+    Background: @bg;
+
+    Label #Titre {
+        Text: "EXPERIENCE MOD";
+        Anchor: (Top: 15, CenterX: 0);
+    }
+
+    Label #SousTitre {
+        Text: "Liste des parties";
+        Anchor: (Top: 45, CenterX: 0);
+    }
+
+    // ── Partie 1 ──────────────────────────────────────
+    Group #Partie1 {
+        Anchor: (Top: 80, Left: 20, Right: 20, Height: 70);
+        Background: @bg;
+
+        Label #NomPartie1 {
+            Text: "Partie 1";
+            Anchor: (CenterY: 0, Left: 15);
+        }
+
+        Label #Joueurs1 {
+            Text: "0/10";
+            Anchor: (CenterY: 0, Left: 200);
+        }
+
+        Label #Statut1 {
+            Text: "En attente";
+            Anchor: (CenterY: 0, Left: 310);
+        }
+
+        Button #Rejoindre1 {
+            Text: "Rejoindre";
+            Anchor: (CenterY: 0, Right: 15, Width: 100, Height: 35);
+        }
+    }
+
+    // ── Partie 2 ──────────────────────────────────────
+    Group #Partie2 {
+        Anchor: (Top: 160, Left: 20, Right: 20, Height: 70);
+        Background: @bg;
+
+        Label #NomPartie2 {
+            Text: "Partie 2";
+            Anchor: (CenterY: 0, Left: 15);
+        }
+
+        Label #Joueurs2 {
+            Text: "0/10";
+            Anchor: (CenterY: 0, Left: 200);
+        }
+
+        Label #Statut2 {
+            Text: "En attente";
+            Anchor: (CenterY: 0, Left: 310);
+        }
+
+        Button #Rejoindre2 {
+            Text: "Rejoindre";
+            Anchor: (CenterY: 0, Right: 15, Width: 100, Height: 35);
+        }
+    }
+
+    // ── Partie 3 ──────────────────────────────────────
+    Group #Partie3 {
+        Anchor: (Top: 240, Left: 20, Right: 20, Height: 70);
+        Background: @bg;
+
+        Label #NomPartie3 {
+            Text: "Partie 3";
+            Anchor: (CenterY: 0, Left: 15);
+        }
+
+        Label #Joueurs3 {
+            Text: "0/10";
+            Anchor: (CenterY: 0, Left: 200);
+        }
+
+        Label #Statut3 {
+            Text: "En attente";
+            Anchor: (CenterY: 0, Left: 310);
+        }
+
+        Button #Rejoindre3 {
+            Text: "Rejoindre";
+            Anchor: (CenterY: 0, Right: 15, Width: 100, Height: 35);
+        }
+    }
+
+    // ── Bouton Fermer ─────────────────────────────────
+    Button #Fermer {
+        Text: "Fermer";
+        Anchor: (Bottom: 15, CenterX: 0, Width: 120, Height: 35);
+    }
+}
