@@ -62,9 +62,9 @@ public class LobbyUI extends CustomUIHud {
         for (int i = 0; i < 3; i++) {
             int n = i + 1; // IDs dans le .ui commencent à 1
 
-            builder.set("#NomPartie" + n + ".TextSpans", Message.plain(NOMS[i]));
-            builder.set("#Joueurs" + n + ".TextSpans", Message.plain(JOUEURS[i] + "/" + MAX[i]));
-            builder.set("#Statut" + n + ".TextSpans", Message.plain(STATUTS[i]));
+            builder.set("#NomPartie" + n + ".TextSpans", Message.raw(NOMS[i]));
+            builder.set("#Joueurs" + n + ".TextSpans", Message.raw(JOUEURS[i] + "/" + MAX[i]));
+            builder.set("#Statut" + n + ".TextSpans", Message.raw(STATUTS[i]));
 
             // Bouton "Rejoindre" visible uniquement si la partie est en attente
             boolean enAttente = "En attente".equals(STATUTS[i]);
