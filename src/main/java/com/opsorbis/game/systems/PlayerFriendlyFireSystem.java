@@ -53,14 +53,17 @@ public class PlayerFriendlyFireSystem extends DamageEventSystem {
             Damage.EntitySource entitySource = (Damage.EntitySource) event.getSource();
             Ref<EntityStore> attackerRef = entitySource.getRef();
             
-            // Si l'attaquant est un joueur
+            // Si l'attaquant est un joueur et on trouve son match
             Player attackerPlayer = store.getComponent(attackerRef, Player.getComponentType());
             if (attackerPlayer != null) {
-                // Si l'attaquant et la victime sont dans la même équipe, on annule les dégâts
-                if (gameManager.getTeamManager().sontDansLaMemeEquipe(attackerPlayer, victimPlayer)) {
-                    event.setCancelled(true);
-                    event.setAmount(0);
-                    event.putMetaObject(Damage.BLOCKED, true); // Informe Hytale que les dégâts ont été bloqués
+                com.opsorbis.game.logic.MatchInstance match = gameManager.getMatchParJoueur(attackerPlayer);
+                // Si l'attaquant et la victime sont dans le même match et la même équipe, on annule les dégâts
+                if (match != null && match == gameManager.getMatchParJoueur(victimPlayer)) {
+                    if (match.getTeamManager().sontDansLaMemeEquipe(attackerPlayer, victimPlayer)) {
+                        event.setCancelled(true);
+                        event.setAmount(0);
+                        event.putMetaObject(Damage.BLOCKED, true);
+                    }
                 }
             }
         }

@@ -26,44 +26,54 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * Gère les 2 reliques dans la base des défenseurs.
- * <p>
- * Nouveau comportement de mort d'un porteur :
- *  - La relique est lâchée à la position du joueur mort (pas respawned à l'origine).
- *  - Un ATTAQUANT qui passe dessus la récupère.
- *  - Un DÉFENSEUR qui passe dessus la renvoie à son spawn d'origine.
+ * Gère la logique des reliques pour un match spécifique.
+ * Responsabilités :
+ * - Apparition des reliques au début de la manche.
+ * - Gestion du ramassage par les attaquants (vol) ou les défenseurs (retour).
+ * - Vérification du dépôt dans la zone de capture.
+ * - Gestion de la mort des porteurs (drop au sol).
  */
 public class RelicManager {
-
+ 
+    /** Instance du match à laquelle appartient ce manager. */
+    private final MatchInstance match;
+    
+    /** Monde Hytale de l'instance. */
     private final World monde;
+    
+    /** Manager d'équipe de l'instance pour vérifier les camps (attaquant/défenseur). */
     private final TeamManager teamManager;
-
-    // Refs des entités reliques dans le monde
+ 
+    // Références ECS des entités reliques représentées dans le monde
     private Ref<EntityStore> relic1Ref;
     private Ref<EntityStore> relic2Ref;
-
-    // Position originale dans la base des défenseurs
+ 
+    /** Positions de spawn initiales (bases défenseurs). */
     private Vector3d relic1OriginalPos;
     private Vector3d relic2OriginalPos;
-
-    // Position actuelle de la relique lâchée (null si portée ou à la base)
+ 
+    /** Positions actuelles des reliques si elles sont lâchées au sol. */
     private Vector3d relic1DroppedPos;
     private Vector3d relic2DroppedPos;
-
-    // État strict de capture (pour éviter le faux-positif si l'entité despawn dans le vide)
+ 
+    /** Indicateurs de capture finale (déposées en base attaquants). */
     private boolean relic1Capturee;
     private boolean relic2Capturee;
-
-    // UUIDs des porteurs (plus robuste pour la déconnexion/reconnexion)
+ 
+    /** UUIDs des joueurs portant actuellement les reliques (null si au sol ou à la base). */
     private java.util.UUID carrier1Uuid;
     private java.util.UUID carrier2Uuid;
-
-    // Score
+ 
+    /** Nombre total de reliques capturées dans cette manche. */
     private int relicsCapturees = 0;
-
-    public RelicManager(World monde, TeamManager teamManager) {
-        this.monde = monde;
-        this.teamManager = teamManager;
+ 
+    /**
+     * @param match L'instance de match parente.
+     */
+    public RelicManager(MatchInstance match) {
+        this.match = match;
+        this.monde = match.getWorld();
+        this.teamManager = match.getTeamManager();
     }
 
     public void initRelics() {
@@ -140,8 +150,10 @@ public class RelicManager {
     // ─── Ramassage ────────────────────────────────────────────────────────────
 
     /**
-     * Un joueur tente de ramasser une relique (à sa position d'origine ou lâchée).
-     * Seuls les attaquants peuvent la voler ; les défenseurs la retournent à la base.
+     * Tente le ramassage d'une relique par un joueur.
+     * Logique :
+     * 1. Si DÉFENSEUR et relique au sol -> Elle est renvoyée à la base.
+     * 2. Si ATTAQUANT et relique non portée -> Il la vole et devient porteur.
      */
     public void ramasserRelique(Player joueur, int numero, CommandBuffer<EntityStore> buffer) {
         PlayerCamp camp = teamManager.getCamp(joueur);
@@ -151,17 +163,17 @@ public class RelicManager {
         boolean estAuSol = (numero == 1) ? relic1DroppedPos != null : relic2DroppedPos != null;
 
         if (estDefenseur) {
-            // Seulement si la relique a été lâchée au sol (elle n'est pas à la base)
+            // Un défenseur "sauve" la relique lâchée
             if (estAuSol) {
                 retournerRelique(numero, buffer);
-                OpsOrbis.get().getGameManager().getStatsManager().incrementReturn(joueur);
+                match.getStatsManager().incrementReturn(joueur);
             }
             return;
         }
 
         if (!estAttaquant) return;
 
-        // Vérifications attaquant
+        // Empêcher de ramasser les deux reliques en même temps ou si déjà porté par un allié
         java.util.UUID uuidJoueur = HytaleUtils.getPlayerUuid(joueur);
         if (java.util.Objects.equals(uuidJoueur, carrier1Uuid) || java.util.Objects.equals(uuidJoueur, carrier2Uuid)) {
             joueur.sendMessage(OpsOrbis.get().getLangManager().get("relic_carrier_already"));
@@ -188,46 +200,45 @@ public class RelicManager {
             carrier2Uuid = HytaleUtils.getPlayerUuid(joueur);
             relic2DroppedPos = null;
         }
-  OpsOrbis.get().getGameManager().diffuserMessage(monde, 
+        HytaleUtils.diffuserMessage(monde, 
             OpsOrbis.get().getLangManager().get("relic_picked_up_global", "player", joueur.getDisplayName(), "number", numero)
         );
         
-        OpsOrbis.get().getGameManager().getStatsManager().incrementSteal(joueur);
-
+        match.getStatsManager().incrementSteal(joueur);
+ 
         // Annonce visuelle au centre de l'écran
-        OpsOrbis.get().getGameManager().diffuserAnnonceEquipe(monde, PlayerCamp.ATTAQUANT,
+        match.diffuserAnnonceEquipe(PlayerCamp.ATTAQUANT,
             OpsOrbis.get().getLangManager().get("relic_stolen_title", "player", joueur.getDisplayName()),
             OpsOrbis.get().getLangManager().get("relic_stolen_subtitle", "player", joueur.getDisplayName())
         );
         
-        OpsOrbis.get().getGameManager().diffuserAnnonceEquipe(monde, PlayerCamp.DEFENSEUR,
+        match.diffuserAnnonceEquipe(PlayerCamp.DEFENSEUR,
             OpsOrbis.get().getLangManager().get("relic_alert_title", "player", joueur.getDisplayName()),
             OpsOrbis.get().getLangManager().get("relic_alert_subtitle", "player", joueur.getDisplayName())
         );
 
-
         joueur.sendMessage(OpsOrbis.get().getLangManager().get("relic_in_hand", "number", numero));
         supprimerEntiteRelique(numero, buffer);
-
+ 
         Store<EntityStore> stockage = monde.getEntityStore().getStore();
         assert joueur.getReference() != null;
         joueur.giveItem(new ItemStack("Bench_Memories", 1), joueur.getReference(), stockage);
-        OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
+        match.getScoreboardHUD().rafraichirTous();
     }
 
     // ─── Retour défenseur ─────────────────────────────────────────────────────
 
     /**
-     * Un défenseur passe sur une relique lâchée → retour au spawn d'origine.
+     * Renvoie la relique à son point de spawn initial (base défenseurs).
+     * Appelé quand un défenseur "touche" une relique lâchée par un attaquant mort.
      */
     private void retournerRelique(int numero, CommandBuffer<EntityStore> buffer) {
         Vector3d positionOrigine = (numero == 1) ? relic1OriginalPos : relic2OriginalPos;
         if (positionOrigine == null) return;
 
-        // --- CORRECTION : Supprimer l'entité AVANT de nullifier (déjà géré par supprimerEntiteRelique mais sécurité) ---
         supprimerEntiteRelique(numero, buffer);
 
-        // La relique retourne à la base : effacer sa position de terrain
+        // La relique retourne à la base : effacer sa position de "drop" au sol
         if (numero == 1) relic1DroppedPos = null;
         if (numero == 2) relic2DroppedPos = null;
 
@@ -235,18 +246,18 @@ public class RelicManager {
         final Vector3d positionFinale = positionOrigine;
         monde.execute(() -> spawnRelic(monde.getEntityStore().getStore(), positionFinale, numeroFinal));
 
-        OpsOrbis.get().getGameManager().diffuserMessage(monde,
+        HytaleUtils.diffuserMessage(monde,
             OpsOrbis.get().getLangManager().get("relic_returned_chat", "number", numero));
-            
-        // Trouver un défenseur proche pour lui donner le crédit du retour ? 
-        // Pour l'instant on se base sur l'appelant direct si disponible
-        // Mais retournerRelique est interne. On va devoir passer le joueur.
-
-        OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
+             
+        match.getScoreboardHUD().rafraichirTous();
     }
 
     // ─── Dépôt ────────────────────────────────────────────────────────────────
 
+    /**
+     * Vérifie si un porteur est dans la zone de dépôt (base attaquants).
+     * Si oui, la relique est considérée comme capturée.
+     */
     public void verifierDepot(Player joueur, CommandBuffer<EntityStore> buffer) {
         MapConfig config = OpsOrbis.get().getConfigManager().getMapConfig();
         java.util.UUID uuidJoueur = HytaleUtils.getPlayerUuid(joueur);
@@ -259,19 +270,18 @@ public class RelicManager {
 
         if (config.getDepositZone() != null) {
             assert transform != null;
+            // On vérifie les coordonnées du joueur par rapport à la zone de dépôt
             if (config.getDepositZone().containsPosition(
                     transform.getPosition().getX(), transform.getPosition().getY(), transform.getPosition().getZ())) {
 
-                // --- NOUVEAU : Vérification de possession réelle de l'ITEM ---
+                // Sécurité : on vérifie que le joueur a bien l'item physique dans son inventaire
                 if (!possedeReliqueItem(joueur)) {
-                    // Le joueur est marqué comme porteur mais n'a pas l'objet (ou l'a jeté/perdu)
                     assert uuidJoueur != null;
                     if (uuidJoueur.equals(carrier1Uuid)) carrier1Uuid = null;
                     if (uuidJoueur.equals(carrier2Uuid)) carrier2Uuid = null;
-                    OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
+                    match.getScoreboardHUD().rafraichirTous();
                     return;
                 }
-                // -------------------------------------------------------------
 
                 int numeroRelique = java.util.Objects.equals(uuidJoueur, carrier1Uuid) ? 1 : 2;
                 relicsCapturees++;
@@ -279,17 +289,18 @@ public class RelicManager {
                 if (numeroRelique == 1) relic1Capturee = true;
                 else relic2Capturee = true;
 
+                // Suppression de l'item d'inventaire
                 joueur.getInventory().getCombinedEverything().removeItemStack(new ItemStack("Bench_Memories", 1));
                 if (numeroRelique == 1) carrier1Uuid = null;
                 else carrier2Uuid = null;
 
-                OpsOrbis.get().getGameManager().diffuserMessage(monde,
+                HytaleUtils.diffuserMessage(monde,
                         OpsOrbis.get().getLangManager().get("relic_captured_chat", "number", numeroRelique, "count", relicsCapturees)
                 );
 
-                OpsOrbis.get().getGameManager().getStatsManager().incrementCapture(joueur);
-
-                OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
+                match.getStatsManager().incrementCapture(joueur);
+  
+                match.getScoreboardHUD().rafraichirTous();
                 verifierVictoire(monde, buffer);
             }
         }
@@ -297,7 +308,7 @@ public class RelicManager {
 
     private void verifierVictoire(World monde, CommandBuffer<EntityStore> buffer) {
         if (relicsCapturees >= 2) {
-            OpsOrbis.get().getGameManager().terminerRound(monde, PlayerCamp.ATTAQUANT, buffer);
+            match.terminerRound(PlayerCamp.ATTAQUANT, buffer);
         }
     }
 
@@ -316,9 +327,9 @@ public class RelicManager {
         else if (uuidPorteur.equals(carrier2Uuid)) numeroRelique = 2;
         
         if (numeroRelique == 0) return;
-
+ 
         if (mort != null) {
-            OpsOrbis.get().getGameManager().getStatsManager().incrementDeath(mort);
+            match.getStatsManager().incrementDeath(mort);
         }
 
         // Obtenir la position de drop de manière sécurisée
@@ -349,11 +360,11 @@ public class RelicManager {
         final Vector3d positionSpawn = positionDrop;
         monde.execute(() -> {
             spawnRelic(monde.getEntityStore().getStore(), positionSpawn, numeroFinal);
-            OpsOrbis.get().getGameManager().getScoreboardHUD().rafraichirTous();
+            match.getScoreboardHUD().rafraichirTous();
         });
 
         String nomJoueur = (mort != null) ? mort.getDisplayName() : "Un porteur";
-        OpsOrbis.get().getGameManager().diffuserMessage(monde, 
+        HytaleUtils.diffuserMessage(monde, 
             OpsOrbis.get().getLangManager().get("relic_dropped_chat", "player", nomJoueur, "number", numeroRelique)
         );
     }

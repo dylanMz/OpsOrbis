@@ -36,10 +36,11 @@ public class RelicDeathSystem extends DeathSystems.OnDeathSystem {
         // Récupération de l'entité joueur décédée
         Player joueur = store.getComponent(ref, Player.getComponentType());
         
-        // On n'agit que si le joueur est valide et que la partie est active
-        if (joueur != null && gameManager.getEtatActuel() == GameManager.GameState.EN_COURS) {
-            if (gameManager.getRelicManager() != null) {
-                gameManager.getRelicManager().gererMortDuPorteur(com.opsorbis.utils.HytaleUtils.getPlayerUuid(joueur), joueur, store, buffer, null);
+        // On n'agit que si le joueur est valide et on trouve son match
+        if (joueur != null) {
+            com.opsorbis.game.logic.MatchInstance match = gameManager.getMatchParJoueur(joueur);
+            if (match != null && match.getEtatActuel() == com.opsorbis.game.logic.GameManager.GameState.EN_COURS && match.getRelicManager() != null) {
+                match.getRelicManager().gererMortDuPorteur(com.opsorbis.utils.HytaleUtils.getPlayerUuid(joueur), joueur, store, buffer, null);
             }
         }
     }

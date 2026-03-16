@@ -28,24 +28,35 @@ import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Gère le spawn et la suppression des PNJ des deux équipes.
+ * Gère le cycle de vie des PNJ (Skelettes Brûlés) pour un match spécifique.
+ * Responsabilités :
+ * - Apparition des PNJ protecteurs au début de chaque manche.
+ * - Configuration de l'IA (Laisse/Leash et Alliances/Attitude).
+ * - Nettoyage des PNJ à la fin de la manche.
  */
 public class NPCManager {
 
+    /** Monde Hytale de l'instance. */
     private final World monde;
+    
+    /** TeamManager de l'instance pour les Alliances (IA). */
     private final TeamManager teamManager;
+    
+    /** Références ECS des deux PNJ défenseurs. */
     private Ref<EntityStore> pnjBleuRef;
     private Ref<EntityStore> pnjRougeRef;
+    
+    /** Points de spawn initiaux (utilisés pour le retour à la base). */
     private Vector3d spawnBleu;
     private Vector3d spawnRouge;
 
-    // Liste des PNJ en cours de retour au bercail (leash break)
+    /** Liste des PNJ actuellement hors de leur zone et tentant de revenir (Leash). */
     private final Set<Ref<EntityStore>> returningNPCs = Collections.newSetFromMap(new ConcurrentHashMap<>());
     
-    // Points de vie maximum des PNJ défenseurs
+    /** Points de vie maximum des PNJ défenseurs. */
     public static final float PNJ_MAX_HP = 500.0f;
     
-    // Rotation par défaut lors de l'apparition
+    /** Rotation par défaut lors de l'apparition. */
     private static final Vector3f ROTATION_DEFAUT = new Vector3f(0, 0, 0);
 
     public boolean isReturningHome(Ref<EntityStore> ref) {
@@ -60,9 +71,16 @@ public class NPCManager {
         }
     }
 
-    public NPCManager(World monde, TeamManager teamManager) {
-        this.monde = monde;
-        this.teamManager = teamManager;
+    /** Instance de match parente. */
+    private final MatchInstance match;
+ 
+    /**
+     * @param match L'instance de match parente.
+     */
+    public NPCManager(MatchInstance match) {
+        this.match = match;
+        this.monde = match.getWorld();
+        this.teamManager = match.getTeamManager();
     }
 
     public World getWorld() {

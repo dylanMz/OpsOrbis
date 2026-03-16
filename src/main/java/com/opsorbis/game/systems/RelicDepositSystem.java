@@ -40,15 +40,15 @@ public class RelicDepositSystem extends ArchetypeTickingSystem<EntityStore> {
 
     @Override
     public void tick(float delta, ArchetypeChunk<EntityStore> chunk, Store<EntityStore> store, CommandBuffer<EntityStore> buffer) {
-        if (gameManager == null || gameManager.getEtatActuel() != GameManager.GameState.EN_COURS || gameManager.getRelicManager() == null) return;
-        RelicManager relicManager = gameManager.getRelicManager();
-
         for (int i = 0; i < chunk.size(); i++) {
             Player joueur = chunk.getComponent(i, Player.getComponentType());
             if (joueur == null) continue;
 
-            // Appel de la vérification de dépôt dans le manager
-            relicManager.verifierDepot(joueur, buffer);
+            com.opsorbis.game.logic.MatchInstance match = gameManager.getMatchParJoueur(joueur);
+            if (match == null || match.getEtatActuel() != com.opsorbis.game.logic.GameManager.GameState.EN_COURS || match.getRelicManager() == null) continue;
+
+            // Appel de la vérification de dépôt dans le manager de l'instance
+            match.getRelicManager().verifierDepot(joueur, buffer);
         }
     }
 }

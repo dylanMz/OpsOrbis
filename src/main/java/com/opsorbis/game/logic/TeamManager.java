@@ -10,19 +10,29 @@ import com.opsorbis.utils.HytaleUtils;
 
 import java.util.UUID;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Gère la répartition des joueurs dans deux équipes persistantes (Equipe 1 et Equipe 2).
  * Le rôle (Attaquant/Défenseur) de chaque équipe change dynamiquement à la mi-temps.
+ * Ce manager est spécifique à une instance de match.
  */
 public class TeamManager {
 
+    /** Liste des joueurs dans l'équipe permanente 1. */
     private final List<Player> equipe1 = new CopyOnWriteArrayList<>();
+    
+    /** Liste des joueurs dans l'équipe permanente 2. */
     private final List<Player> equipe2 = new CopyOnWriteArrayList<>();
+    
+    /** Cache rapide pour retrouver un joueur par son UUID. */
     private final ConcurrentHashMap<UUID, Player> uuidMap = new ConcurrentHashMap<>();
+    
+    /** Indique si l'équipe 1 est actuellement l'équipe attaquante. */
     private boolean equipe1EstAttaquant; // true = Eq1 est Attaquant, false = Eq1 est Défenseur
+    
     private int scoreEquipe1;
     private int scoreEquipe2;
 
@@ -49,7 +59,14 @@ public class TeamManager {
         return count;
     }
 
-    public TeamManager() {
+    /** Instance de match parente. */
+    private final MatchInstance match;
+ 
+    /**
+     * @param match L'instance de match parente.
+     */
+    public TeamManager(MatchInstance match) {
+        this.match = match;
         this.equipe1EstAttaquant = true; // Par défaut, l'équipe 1 commence en attaque
         this.scoreEquipe1 = 0;
         this.scoreEquipe2 = 0;
@@ -74,8 +91,8 @@ public class TeamManager {
         if (uuid != null) {
             uuidMap.put(uuid, joueur);
             // Sauvegarder l'état du joueur s'il rejoint le match
-            if (!OpsOrbis.get().getGameManager().getPlayerStateManager().hasSavedState(uuid)) {
-                OpsOrbis.get().getGameManager().getPlayerStateManager().saveState(joueur);
+            if (!match.getPlayerStateManager().hasSavedState(uuid)) {
+                match.getPlayerStateManager().saveState(joueur);
                 // On vide l'inventaire immédiatement après la sauvegarde pour le mode de jeu
                 if (joueur.getInventory() != null) {
                     joueur.getInventory().clear();
@@ -263,6 +280,12 @@ public class TeamManager {
     public Player getJoueurParRef(PlayerRef ref) {
         if (ref == null) return null;
         return getJoueurParUUID(ref.getUuid());
+    }
+
+    public List<Player> getTousLesJoueurs() {
+        List<Player> tous = new ArrayList<>(equipe1);
+        tous.addAll(equipe2);
+        return tous;
     }
 
     /**

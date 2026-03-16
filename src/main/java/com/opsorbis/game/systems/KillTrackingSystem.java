@@ -31,12 +31,13 @@ public class KillTrackingSystem extends EntityEventSystem<EntityStore, KillFeedE
 
     @Override
     public void handle(int index, @Nonnull ArchetypeChunk<EntityStore> chunk, @Nonnull Store<EntityStore> store, @Nonnull CommandBuffer<EntityStore> buffer, @Nonnull KillFeedEvent.KillerMessage event) {
-        if (gameManager.getEtatActuel() != GameManager.GameState.EN_COURS) return;
-
-        // On vérifie si le tueur est un joueur
+        // On vérifie si le tueur est un joueur et on trouve son match
         Player tueur = chunk.getComponent(index, Player.getComponentType());
         if (tueur != null) {
-            gameManager.getStatsManager().incrementKill(tueur);
+            com.opsorbis.game.logic.MatchInstance match = gameManager.getMatchParJoueur(tueur);
+            if (match != null && match.getEtatActuel() == com.opsorbis.game.logic.GameManager.GameState.EN_COURS) {
+                match.getStatsManager().incrementKill(tueur);
+            }
         }
     }
 }

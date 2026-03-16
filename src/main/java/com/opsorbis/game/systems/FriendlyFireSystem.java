@@ -54,18 +54,21 @@ public class FriendlyFireSystem extends DamageEventSystem {
             Damage.EntitySource entitySource = (Damage.EntitySource) event.getSource();
             Ref<EntityStore> attackerRef = entitySource.getRef();
             
-            // On vérifie si l'attaquant est un joueur
+            // On vérifie si l'attaquant est un joueur et on trouve son match
             Player attackerPlayer = store.getComponent(attackerRef, Player.getComponentType());
-            if (attackerPlayer != null && gameManager.getNpcManager() != null) {
-                // Identification de l'équipe du PNJ victime
-                boolean isVictimNPC = gameManager.getNpcManager().estPnjBleu(victimRef) || 
-                                     gameManager.getNpcManager().estPnjRouge(victimRef);
-                
-                // Si la victime est un de nos PNJ et l'attaquant est un défenseur, on bloque
-                if (isVictimNPC && gameManager.getTeamManager().getCamp(attackerPlayer) == PlayerCamp.DEFENSEUR) {
-                    event.setCancelled(true);
-                    event.setAmount(0);
-                    event.putMetaObject(Damage.BLOCKED, true);
+            if (attackerPlayer != null) {
+                com.opsorbis.game.logic.MatchInstance match = gameManager.getMatchParJoueur(attackerPlayer);
+                if (match != null && match.getNpcManager() != null) {
+                    // Identification de l'équipe du PNJ victime dans le contexte de ce match
+                    boolean isVictimNPC = match.getNpcManager().estPnjBleu(victimRef) || 
+                                         match.getNpcManager().estPnjRouge(victimRef);
+                    
+                    // Si la victime est un de nos PNJ et l'attaquant est un défenseur, on bloque
+                    if (isVictimNPC && match.getTeamManager().getCamp(attackerPlayer) == PlayerCamp.DEFENSEUR) {
+                        event.setCancelled(true);
+                        event.setAmount(0);
+                        event.putMetaObject(Damage.BLOCKED, true);
+                    }
                 }
             }
         }

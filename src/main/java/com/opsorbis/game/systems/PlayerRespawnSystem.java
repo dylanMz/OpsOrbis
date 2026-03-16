@@ -41,19 +41,18 @@ public class PlayerRespawnSystem extends RespawnSystems.OnRespawnSystem {
         // Le joueur vient de cliquer sur "Respawn"
         Player joueur = store.getComponent(ref, Player.getComponentType());
         
-        if (joueur != null && gameManager.getEtatActuel() == GameManager.GameState.EN_COURS) {
-            
-            // 1. Téléportation immédiate au point de spawn de son équipe
-            if (gameManager.getTeamManager() != null) {
-                gameManager.getTeamManager().teleporterAuSpawn(joueur);
-            }
-            
-            // 2. Sécurité : On s'assure qu'il n'a plus de relique dans son inventaire
-            joueur.getInventory().getCombinedEverything().removeItemStack(new ItemStack("Bench_Memories", 1));
+        if (joueur != null) {
+            com.opsorbis.game.logic.MatchInstance match = gameManager.getMatchParJoueur(joueur);
+            if (match != null && match.getEtatActuel() == com.opsorbis.game.logic.GameManager.GameState.EN_COURS) {
+                
+                // 1. Téléportation immédiate au point de spawn de son équipe
+                match.getTeamManager().teleporterAuSpawn(joueur);
+                
+                // 2. Sécurité : On s'assure qu'il n'a plus de relique dans son inventaire
+                joueur.getInventory().getCombinedEverything().removeItemStack(new ItemStack("Bench_Memories", 1));
 
-            // 3. Redonner l'équipement de combat (Kit)
-            if (gameManager.getKitManager() != null) {
-                gameManager.getKitManager().donnerEquipement(joueur);
+                // 3. Redonner l'équipement de combat (Kit)
+                match.getKitManager().donnerEquipement(joueur);
             }
         }
     }

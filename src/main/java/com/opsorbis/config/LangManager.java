@@ -133,6 +133,7 @@ public class LangManager {
                 "  \"cmd_no_permission\": \"&cVous n'avez pas la permission.\",\n" +
                 "  \"cmd_unknown\": \"&cCommande inconnue.\",\n" +
                 "  \"cmd_usage_main\": \"&cUsage: /oorbis <join|role|kit|start|config>\",\n" +
+                "  \"cmd_out_of_bounds\": \"&c[Limite] Vous êtes sorti de la zone de jeu !\",\n" +
                 "  \"cmd_config_saved\": \"&aConfiguration sauvegardée !\",\n" +
                 "  \"cmd_kit_not_compatible\": \"&cLe kit &6{kit} &cn'est pas disponible pour le rôle &6{role}&c. Changez de rôle avec &e/oorbis role <melee|distance>\",\n" +
                 "  \"scoreboard_round\": \"&7Manche: &e{round}/{max_round}\",\n" +
@@ -163,6 +164,7 @@ public class LangManager {
                 "  \"cmd_config_help_setrelic\": \"\\n &f• &esetrelic <1|2> &7— Position relique\",\n" +
                 "  \"cmd_config_help_setnpcspawn\": \"\\n &f• &esetnpcspawn <1|2> &7— Spawn PNJ\",\n" +
                 "  \"cmd_config_help_setdeposit\": \"\\n &f• &esetdeposit &7— Zone dépôt attaquants\",\n" +
+                "  \"cmd_config_help_setgamezone\": \"\\n &f• &esetgamezone &7— Zone de jeu globale\",\n" +
                 "  \"cmd_config_help_save\": \"\\n &f• &esave &7— Sauvegarder\",\n" +
                 "  \"cmd_config_provider_missing\": \"&cSelectionProvider introuvable.\",\n" +
                 "  \"cmd_config_no_selection\": \"&cAucune zone sélectionnée.\",\n" +
@@ -173,6 +175,7 @@ public class LangManager {
                 "  \"cmd_config_number_invalid\": \"&cNuméro invalide (1 ou 2).\",\n" +
                 "  \"cmd_config_npc_success\": \"&a✓ Spawn PNJ {number} défini.\",\n" +
                 "  \"cmd_config_deposit_success\": \"&a✓ Zone de dépôt Attaquants définie.\",\n" +
+                "  \"cmd_config_gamezone_success\": \"&a✓ Zone de jeu globale définie.\",\n" +
                 "  \"cmd_role_required\": \"&cVous devez d'abord rejoindre la partie avec /oorbis join\",\n" +
                 "  \"cmd_reload_success\": \"&a✓ Plugin rechargé avec succès !\",\n" +
                 "  \"summary_victory_title\": \"&6&lVICTOIRE DES {camp}\",\n" +
@@ -234,6 +237,7 @@ public class LangManager {
                 "  \"cmd_no_permission\": \"&cYou don't have permission.\",\n" +
                 "  \"cmd_unknown\": \"&cUnknown command.\",\n" +
                 "  \"cmd_usage_main\": \"&cUsage: /oorbis <join|role|kit|start|config>\",\n" +
+                "  \"cmd_out_of_bounds\": \"&c[Boundary] You left the game zone!\",\n" +
                 "  \"cmd_config_saved\": \"&aConfiguration saved!\",\n" +
                 "  \"cmd_kit_not_compatible\": \"&cThe &6{kit} &ckit is not available for the &6{role} &crole. Change roles with &e/oorbis role <melee/distance>\",\n" +
                 "  \"scoreboard_round\": \"&7Round: &e{round}/{max_round}\",\n" +
@@ -265,6 +269,7 @@ public class LangManager {
                 "  \"cmd_config_help_setrelic\": \"\\n &f• &esetrelic <1|2> &7— Relic Position\",\n" +
                 "  \"cmd_config_help_setnpcspawn\": \"\\n &f• &esetnpcspawn <1|2> &7— NPC Spawn\",\n" +
                 "  \"cmd_config_help_setdeposit\": \"\\n &f• &esetdeposit &7— Attacker Deposit Zone\",\n" +
+                "  \"cmd_config_help_setgamezone\": \"\\n &f• &esetgamezone &7— Global Play Zone\",\n" +
                 "  \"cmd_config_help_save\": \"\\n &f• &esave &7— Save Config\",\n" +
                 "  \"cmd_config_provider_missing\": \"&cSelectionProvider not found.\",\n" +
                 "  \"cmd_config_no_selection\": \"&cNo zone selected.\",\n" +
@@ -275,6 +280,7 @@ public class LangManager {
                 "  \"cmd_config_number_invalid\": \"&cInvalid number (1 or 2).\",\n" +
                 "  \"cmd_config_npc_success\": \"&a✓ NPC Spawn {number} defined.\",\n" +
                 "  \"cmd_config_deposit_success\": \"&a✓ Attacker Deposit Zone defined.\",\n" +
+                "  \"cmd_config_gamezone_success\": \"&a✓ Global Play Zone defined.\",\n" +
                 "  \"cmd_role_required\": \"&cYou must join the match first with /oorbis join\",\n" +
                 "  \"cmd_reload_success\": \"&a✓ Plugin reloaded successfully!\",\n" +
                 "  \"summary_victory_title\": \"&6&l{camp} WIN\",\n" +

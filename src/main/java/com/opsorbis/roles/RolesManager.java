@@ -1,6 +1,7 @@
 package com.opsorbis.roles;
 
 import com.opsorbis.OpsOrbis;
+import com.opsorbis.game.logic.MatchInstance;
 import com.opsorbis.kits.KitManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.component.Ref;
@@ -53,8 +54,10 @@ public class RolesManager {
     }
 
     private final Map<Ref<EntityStore>, RoleType> joueursRoles;
-
-    public RolesManager() {
+    private final MatchInstance match;
+ 
+    public RolesManager(MatchInstance match) {
+        this.match = match;
         this.joueursRoles = new HashMap<>();
     }
 

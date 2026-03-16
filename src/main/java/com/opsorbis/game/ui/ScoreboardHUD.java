@@ -1,6 +1,6 @@
 package com.opsorbis.game.ui;
 
-import com.opsorbis.game.logic.GameManager;
+import com.opsorbis.game.logic.MatchInstance;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.opsorbis.utils.HytaleUtils;
@@ -13,11 +13,11 @@ import java.util.Map;
  */
 public class ScoreboardHUD {
 
-    private final GameManager gameManager;
+    private final MatchInstance matchInstance;
     private final Map<PlayerRef, OpsOrbisScoreboard> activeHuds = new HashMap<>();
 
-    public ScoreboardHUD(GameManager gameManager) {
-        this.gameManager = gameManager;
+    public ScoreboardHUD(MatchInstance matchInstance) {
+        this.matchInstance = matchInstance;
     }
 
     public void afficher(Player joueur) {
@@ -27,7 +27,7 @@ public class ScoreboardHUD {
         OpsOrbisScoreboard scoreboard = activeHuds.get(ref);
         
         if (scoreboard == null) {
-            scoreboard = new OpsOrbisScoreboard(ref, gameManager);
+            scoreboard = new OpsOrbisScoreboard(ref, matchInstance);
             if (joueur.getHudManager() != null) {
                 com.buuz135.mhud.MultipleHUD.getInstance().setCustomHud(joueur, ref, "OpsOrbisScoreboard", scoreboard);
                 activeHuds.put(ref, scoreboard);
@@ -57,12 +57,11 @@ public class ScoreboardHUD {
     }
 
     /**
-     * Masque le scoreboard pour tout le monde via visibilité.
+     * Masque le scoreboard pour tous les participants.
      */
-    public void masquerPourTousInscrits(com.hypixel.hytale.server.core.universe.world.World monde) {
+    public void masquerPourTousParticipants() {
         for (OpsOrbisScoreboard hud : activeHuds.values()) {
             hud.setVisible(false);
         }
-        // On ne vide pas forcément la map, on laisse les instances prêtes
     }
 }

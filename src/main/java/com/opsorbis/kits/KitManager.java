@@ -1,6 +1,7 @@
 package com.opsorbis.kits;
 
 import com.opsorbis.OpsOrbis;
+import com.opsorbis.game.logic.MatchInstance;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -35,8 +36,10 @@ public class KitManager {
     }
 
     private final Map<Ref<EntityStore>, KitType> joueursKits;
-
-    public KitManager() {
+    private final MatchInstance match;
+ 
+    public KitManager(MatchInstance match) {
+        this.match = match;
         this.joueursKits = new HashMap<>();
     }
 

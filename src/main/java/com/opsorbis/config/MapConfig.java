@@ -23,6 +23,9 @@ public class MapConfig {
     // Zone de dépôt des attaquants (pour capter les reliques)
     private Box depositZone;
 
+    // Zone de jeu globale (limite de la partie)
+    private Box gameZone;
+
     public MapConfig() {
         // Valeurs par défaut
         this.attackerZone  = new Box(90, 45, 90, 110, 55, 110);
@@ -32,6 +35,7 @@ public class MapConfig {
         this.npcSpawn1     = new Vector3d(-100, 50, -100);
         this.npcSpawn2     = new Vector3d(-100, 50, -100);
         this.depositZone   = new Box(95, 45, 95, 105, 55, 105);
+        this.gameZone      = new Box(-200, 0, -200, 200, 255, 200);
     }
 
     // ── Zones de spawn ──────────────────────────────────────────────────────
@@ -62,6 +66,9 @@ public class MapConfig {
 
     public Box getDepositZone() { return depositZone; }
     public void setDepositZone(Box depositZone) { this.depositZone = depositZone; }
+
+    public Box getGameZone() { return gameZone; }
+    public void setGameZone(Box gameZone) { this.gameZone = gameZone; }
 
     // ── Alias pour la compatibilité avec l'ancien code ───────────────────────
 

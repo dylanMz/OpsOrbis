@@ -50,26 +50,27 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
 
     @Override
     public void tick(float delta, @NonNullDecl ArchetypeChunk<EntityStore> chunk, @NonNullDecl Store<EntityStore> store, @NonNullDecl CommandBuffer<EntityStore> buffer) {
-        if (gameManager == null || gameManager.getEtatActuel() != GameManager.GameState.EN_COURS) return;
-        RelicManager rm = gameManager.getRelicManager();
-        if (rm == null) return;
-
-        MapConfig config = OpsOrbis.get().getConfigManager().getMapConfig();
-
         for (int i = 0; i < chunk.size(); i++) {
-            // Si le joueur est mort, il ne peut pas ramasser d'objet
-            if (chunk.getComponent(i, DeathComponent.getComponentType()) != null) continue;
-
             Player joueur = chunk.getComponent(i, Player.getComponentType());
             TransformComponent transform = chunk.getComponent(i, TransformComponent.getComponentType());
             if (joueur == null || transform == null) continue;
 
+            // Trouver le match du joueur
+            com.opsorbis.game.logic.MatchInstance match = gameManager.getMatchParJoueur(joueur);
+            if (match == null || match.getEtatActuel() != com.opsorbis.game.logic.GameManager.GameState.EN_COURS) continue;
+
+            RelicManager rm = match.getRelicManager();
+            if (rm == null) continue;
+            MapConfig config = match.getMapConfig();
+
+            // Si le joueur est mort, il ne peut pas ramasser d'objet
+            if (chunk.getComponent(i, DeathComponent.getComponentType()) != null) continue;
+
             // --- NOUVEAU : Cooldown de 10s après reconnexion ---
             UUID uuid = HytaleUtils.getPlayerUuid(joueur);
-            if (gameManager.estBloqueRamassageRelique(uuid)) {
+            if (match.estBloqueRamassageRelique(uuid)) {
                 continue;
             }
-            // ---------------------------------------------------
             
             Player c1 = rm.getCarrierRelic1();
             Player c2 = rm.getCarrierRelic2();
@@ -85,13 +86,11 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
             Vector3d positionOrigine1 = config.getRelic1();
 
             if (positionLachee1 != null) {
-                // Relique lâchée sur le terrain — quiconque passe dessus interagit
                 if (pos.distanceTo(positionLachee1) <= PICKUP_RANGE) {
                     rm.ramasserRelique(joueur, 1, buffer);
                     continue;
                 }
             } else if (rm.estReliqueDisponible(false, 1) && positionOrigine1 != null && pos.distanceTo(positionOrigine1) <= PICKUP_RANGE) {
-                // Relique à sa base — seuls les attaquants peuvent la voler
                 rm.ramasserRelique(joueur, 1, buffer);
                 continue;
             }

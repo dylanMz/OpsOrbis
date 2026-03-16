@@ -85,19 +85,13 @@ public class OpsOrbis extends JavaPlugin {
         getEventRegistry().register(PlayerConnectEvent.class, event -> {
             PlayerRef ref = event.getPlayerRef();
             if (ref != null) {
-                // --- NOUVEAU : On bloque le ramassage IMMEDIATEMENT au join ---
-                gameManager.ajouterCooldownRamassageRelique(ref.getUuid(), 10000);
-                // ------------------------------------------------------------
-
-                long connectionTime = System.currentTimeMillis();
-                
                 // On tente une reconnexion immédiate ET une retardée pour pallier les délais de join d'Hytale
                 scheduler.schedule(() -> {
                     for (World monde : com.hypixel.hytale.server.core.universe.Universe.get().getWorlds().values()) {
                         monde.execute(() -> {
                             Player joueur = HytaleUtils.getPlayerFromRef(ref, monde);
                             if (joueur != null) {
-                                gameManager.gererReconnexion(joueur, connectionTime);
+                                gameManager.gererReconnexion(joueur);
                             }
                         });
                     }
@@ -108,7 +102,7 @@ public class OpsOrbis extends JavaPlugin {
                         monde.execute(() -> {
                             Player joueur = HytaleUtils.getPlayerFromRef(ref, monde);
                             if (joueur != null) {
-                                gameManager.gererReconnexion(joueur, connectionTime);
+                                gameManager.gererReconnexion(joueur);
                             }
                         });
                     }
@@ -119,15 +113,13 @@ public class OpsOrbis extends JavaPlugin {
         getEventRegistry().register(PlayerDisconnectEvent.class, event -> {
             PlayerRef ref = event.getPlayerRef();
             if (ref != null) {
-                // On essaie de récupérer le monde "default" pour l'exécution
-                World monde = com.hypixel.hytale.server.core.universe.Universe.get().getWorld("default");
-                
-                if (monde != null) {
-                    try {
+                com.opsorbis.game.logic.MatchInstance match = gameManager.getMatchParJoueurRef(ref);
+                if (match != null) {
+                    World monde = match.getWorld();
+                    if (monde != null) {
                         monde.execute(() -> {
-                            // ON CAPTURE LA POSITION ICI (SYNCHRONE SUR LE THREAD DU MONDE)
                             final Vector3d positionDeco;
-                            Player joueur = gameManager.getTeamManager().getJoueurParRef(ref);
+                            Player joueur = match.getTeamManager().getJoueurParRef(ref);
                             if (joueur != null && joueur.getWorld() != null) {
                                 Store<EntityStore> store = joueur.getWorld().getEntityStore().getStore();
                                 TransformComponent tc = store.getComponent(joueur.getReference(), TransformComponent.getComponentType());
@@ -135,30 +127,23 @@ public class OpsOrbis extends JavaPlugin {
                             } else {
                                 positionDeco = null;
                             }
-                            
-                            gameManager.retirerJoueurParRef(ref, positionDeco);
+                            match.retirerJoueurParRef(ref, positionDeco);
                         });
-                    } catch (Exception e) {
-                        // Ignored: world probably shutting down
                     }
                 }
             }
         });
         
         // 6. Arret automatique si vide (Check toutes les 10 secondes)
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                gameManager.verifierArretAutomatique();
-            } catch (Exception e) {
-                getLogger().at(Level.SEVERE).log("Erreur lors du check auto-stop: " + e.getMessage());
-            }
-        }, 10, 10, TimeUnit.SECONDS);
+        // Note: Désactivé temporairement ou à déplacer dans MatchInstance si nécessaire
+        /*scheduler.scheduleAtFixedRate(() -> {
+            // ... logic to implement per match instance ...
+        }, 10, 10, TimeUnit.SECONDS);*/
         
-        // 7. Tick 1 seconde pour le démarrage automatique et le chrono de match
+        // 7. Tick 1 seconde pour toutes les instances
         scheduler.scheduleAtFixedRate(() -> {
             try {
-                com.hypixel.hytale.server.core.universe.world.World monde = getPremierMonde();
-                if (monde != null) {
+                for (World monde : com.hypixel.hytale.server.core.universe.Universe.get().getWorlds().values()) {
                     monde.execute(() -> gameManager.tickSeconde(monde));
                 }
             } catch (Exception e) {
@@ -173,11 +158,10 @@ public class OpsOrbis extends JavaPlugin {
      * Tente de récupérer une instance de monde via les joueurs connectés.
      */
     private com.hypixel.hytale.server.core.universe.world.World getPremierMonde() {
-        for (Player p : gameManager.getTeamManager().getEquipeAttaquants()) {
-            if (p != null && p.getWorld() != null) return p.getWorld();
-        }
-        for (Player p : gameManager.getTeamManager().getEquipeDefenseurs()) {
-            if (p != null && p.getWorld() != null) return p.getWorld();
+        for (com.opsorbis.game.logic.MatchInstance match : gameManager.getToutesLesInstances()) {
+            for (Player p : match.getTeamManager().getTousLesJoueurs()) {
+                if (p != null && p.getWorld() != null) return p.getWorld();
+            }
         }
         return null;
     }
@@ -213,14 +197,9 @@ public class OpsOrbis extends JavaPlugin {
     private void registerPlaceholders() {
         if (langManager == null || gameManager == null) return;
 
-        langManager.registerGlobal("round", () -> gameManager.getRoundActuel());
-        langManager.registerGlobal("max_round", () -> configManager.getGlobalConfig().getMaxRounds());
-        langManager.registerGlobal("score1", () -> gameManager.getTeamManager().getScoreEquipe1());
-        langManager.registerGlobal("score2", () -> gameManager.getTeamManager().getScoreEquipe2());
-        langManager.registerGlobal("time", () -> {
-            long t = gameManager.getTempsRestantManche();
-            return String.format("%02d:%02d", t / 60, t % 60);
-        });
+        // Les placeholders globaux n'ont plus de sens direct sans contexte joueur
+        // On pourrait utiliser le premier match pour les placeholders globaux ou les masquer
+        langManager.registerGlobal("round", () -> 1);
     }
 
     public void runDelayed(long delayMs, Runnable task) {
