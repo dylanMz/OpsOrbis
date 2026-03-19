@@ -8,6 +8,7 @@ import com.opsorbis.roles.RolesManager;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.opsorbis.utils.HytaleUtils;
 import java.util.logging.Level;
@@ -20,7 +21,6 @@ import java.awt.Color;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.component.ArchetypeChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.opsorbis.game.ui.ScoreboardHUD;
@@ -46,9 +46,11 @@ public class GameManager {
     private RelicManager relicManager;
     private final ScoreboardHUD scoreboardHUD;
     private final PlayerStateManager playerStateManager;
+    private final StatsManager statsManager;
     private final OpsOrbis plugin;
     private final Map<UUID, Long> disconnectionTimes = new HashMap<>(); // UUID -> Heure de déconnexion
-    private final Map<UUID, Long> reconnectionTimes = new HashMap<>(); // UUID -> Heure de reconnexion physique
+    private final Map<UUID, Long> reconnectionTimes = new HashMap<>(); // Anti-doublon pour le traitement de reco
+    private final Map<UUID, Long> relicPickupCooldowns = new HashMap<>(); // UUID -> Heure de fin du blocage ramassage
     
     // Logique de démarrage automatique
     private int compteAReboursDemarrage;
@@ -66,6 +68,7 @@ public class GameManager {
         this.rolesManager = new RolesManager();
         this.scoreboardHUD = new ScoreboardHUD(this);
         this.playerStateManager = new PlayerStateManager();
+        this.statsManager = new StatsManager();
         
         GlobalConfig global = plugin.getConfigManager().getGlobalConfig();
         this.compteAReboursDemarrage = global.getAutoStartDelaySeconds();
@@ -89,6 +92,7 @@ public class GameManager {
 
         this.etatActuel = GameState.EN_COURS;
         teamManager.resetScoresEtRoles();
+        statsManager.reset();
         this.roundActuel = 1;
         
         this.npcManager = new NPCManager(monde, teamManager);
@@ -180,7 +184,7 @@ public class GameManager {
 
             if (tempsRestantManche <= 0) {
                 HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("match_time_up"));
-                terminerRound(monde, PlayerRole.DEFENSEUR, null);
+                terminerRound(monde, PlayerCamp.DEFENSEUR, null);
             }
         }
     }
@@ -195,7 +199,7 @@ public class GameManager {
             if (nbJoueurs >= global.getMinPlayersToStart()) {
                 this.etatActuel = GameState.DEMARRAGE;
                 this.compteAReboursDemarrage = global.getAutoStartDelaySeconds();
-                HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("timer_auto_start", compteAReboursDemarrage));
+                HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("timer_auto_start", "seconds", compteAReboursDemarrage));
             }
         } else if (etatActuel == GameState.DEMARRAGE) {
             if (nbJoueurs < global.getMinPlayersToStart()) {
@@ -208,10 +212,10 @@ public class GameManager {
 
             // Annonces
             if (compteAReboursDemarrage == 15 || compteAReboursDemarrage == 10 || (compteAReboursDemarrage <= 5 && compteAReboursDemarrage > 0)) {
-                HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("timer_seconds_left", compteAReboursDemarrage));
+                HytaleUtils.diffuserMessage(monde, OpsOrbis.get().getLangManager().get("timer_seconds_left", "seconds", compteAReboursDemarrage));
                 diffuserAnnonceRapide(monde, 
                     Message.raw(String.valueOf(compteAReboursDemarrage)).color(Color.YELLOW),
-                    OpsOrbis.get().getLangManager().get("timer_seconds_left", compteAReboursDemarrage),
+                    OpsOrbis.get().getLangManager().get("timer_seconds_left", "seconds", compteAReboursDemarrage),
                     0.6f, 0.1f, 0.3f
                 );
             }
@@ -282,27 +286,33 @@ public class GameManager {
 
     /**
      * Termine une seule manche et avance selon le déroulement (Mi-temps ou Fin).
-     * @param roleVainqueur Le rôle vainqueur.
+     * @param campVainqueur Le camp vainqueur.
      */
-    public void terminerRound(World monde, PlayerRole roleVainqueur, com.hypixel.hytale.component.CommandBuffer<EntityStore> buffer) {
-        teamManager.ajouterPointEquipe(roleVainqueur);
+    public void terminerRound(World monde, PlayerCamp campVainqueur, com.hypixel.hytale.component.CommandBuffer<EntityStore> buffer) {
+        teamManager.ajouterPointEquipe(campVainqueur);
         
         LangManager lang = OpsOrbis.get().getLangManager();
-        HytaleUtils.diffuserMessage(monde, Message.join(
-            lang.get("prefix"),
-            lang.get(roleVainqueur.getTranslationKey()).color(roleVainqueur.getColor())
-        ));
+        String roleName = lang.getRaw(campVainqueur.getLangKey());
+        
+        // 1. Message de chat détaillé
+        HytaleUtils.diffuserMessage(monde, lang.get("round_winner_chat", "round", roundActuel, "camp", roleName));
+        
+        // 2. Annonce visuelle au centre de l'écran (TitleEvent)
+        diffuserAnnonce(monde, 
+            lang.get("round_winner_title", "round", roundActuel, "camp", roleName),
+            lang.get("round_winner_subtitle", "round", roundActuel, "role", roleName)
+        );
 
-        // 1. Nettoyage immédiat des entités via le buffer ECS
+        // 3. Nettoyage immédiat des entités via le buffer ECS
         if (npcManager != null) npcManager.supprimerPNJ(buffer);
         if (relicManager != null) relicManager.supprimerReliques(buffer);
         
-        // 2. On passe en état PAUSE pour arrêter les systèmes ECS pendant la transition
+        // 4. On passe en état PAUSE pour arrêter les systèmes ECS pendant la transition
         this.etatActuel = GameState.PAUSE;
         this.tempsRestantManche = 0;
 
-        // 3. On décale la logique de changement de round/match pour sortir du Tick ECS (Évite IllegalStateException)
-        OpsOrbis.get().runDelayed(3000, () -> {
+        // 5. On décale la logique de changement de round de 10 secondes (au lieu de 3)
+        OpsOrbis.get().runDelayed(10000, () -> {
             monde.execute(() -> {
                 this.roundActuel++;
                 
@@ -330,9 +340,9 @@ public class GameManager {
         String texteVainqueur;
         LangManager lang = OpsOrbis.get().getLangManager();
         if (teamManager.getScoreEquipe1() > teamManager.getScoreEquipe2()) {
-            texteVainqueur = lang.getRaw("team_1_name");
+            texteVainqueur = lang.getRaw("summary_victory_title", "camp", lang.getRaw("team_1_name"));
         } else if (teamManager.getScoreEquipe2() > teamManager.getScoreEquipe1()) {
-            texteVainqueur = lang.getRaw("team_2_name");
+            texteVainqueur = lang.getRaw("summary_victory_title", "camp", lang.getRaw("team_2_name"));
         } else {
             texteVainqueur = lang.getRaw("match_draw");
         }
@@ -342,21 +352,24 @@ public class GameManager {
             OpsOrbis.get().getLangManager().get("match_over_scores"),
             OpsOrbis.get().getLangManager().get("match_over_winner_label", "winner", texteVainqueur)
         ));
-        
-        // Nettoyer les listes de joueurs et restaurer leur état
+
+        // Nettoyer les listes de joueurs
         List<Player> participants = new ArrayList<>(teamManager.getEquipeAttaquants());
         participants.addAll(teamManager.getEquipeDefenseurs());
 
-        // On masque le scoreboard proprement pour tout le monde (participants et spectateurs)
+        // 1. Masquer le scoreboard proprement
         scoreboardHUD.masquerPourTousInscrits(monde);
-
-        for (Player p : participants) {
-            retirerJoueurDuMatch(p); 
-        }
-        
-        teamManager.viderEquipes();
-        teamManager.resetScoresEtRoles();
-        disconnectionTimes.clear();
+        // On retarde le nettoyage pour laisser le temps de lire le résumé
+        OpsOrbis.get().runDelayed(10000, () -> {
+            monde.execute(() -> {
+                for (Player p : participants) {
+                    retirerJoueurDuMatch(p); 
+                }
+                teamManager.viderEquipes();
+                teamManager.resetScoresEtRoles();
+                disconnectionTimes.clear();
+            });
+        });
     }
 
     /**
@@ -402,65 +415,79 @@ public class GameManager {
         UUID uuid = HytaleUtils.getPlayerUuid(joueur);
         if (uuid == null || joueur.getWorld() == null) return;
 
+        // Anti-doublon assoupli : on accepte une nouvelle connexion si l'ancienne n'est pas "active"
+        // (On le nettoie maintenant dans retirerJoueurParRef pour permettre les re-décos/re-recos)
+        if (reconnectionTimes.containsKey(uuid)) {
+            HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Reconnexion deja traitee pour " + uuid);
+            return;
+        }
+
+        HytaleLogger.getLogger().at(Level.INFO).log("[Ops Orbis] Tentative de reconnexion pour " + uuid);
+
         // 1. Est-ce qu'on a un état sauvegardé pour lui ?
         if (!playerStateManager.hasSavedState(uuid)) {
             return;
         }
 
-        // 2. Si la partie est finie, on restaure direct
-        if (etatActuel != GameState.EN_COURS) {
-            playerStateManager.restoreState(joueur);
+        // 2. Si le joueur est toujours dans une équipe (période de grâce active),
+        // on ne restaure SURTOUT PAS son inventaire d'origine car il est toujours "en jeu"
+        if (teamManager.isJoueurDansMatch(joueur)) {
             disconnectionTimes.remove(uuid);
             reconnectionTimes.put(uuid, connectionTime);
-            
-            // Sécurité : clean du terrain quand un joueur revient si pas de match
-            if (npcManager != null) npcManager.supprimerPNJ(null);
-            if (relicManager != null) relicManager.supprimerReliques(null);
-            return;
-        }
-
-        // 3. Si la partie est en cours, on check le délai
-        Long decoTime = disconnectionTimes.get(uuid);
-
-        GlobalConfig global = plugin.getConfigManager().getGlobalConfig();
-        if (decoTime != null && (connectionTime - decoTime) <= global.getGracePeriodMs()) {
-            
-            // Reconnexion rapide : il reste dans le match
-            disconnectionTimes.remove(uuid);
-            reconnectionTimes.put(uuid, connectionTime);
-            
-            // IMPORTANT : Mettre à jour l'instance Player dans le TeamManager !
+            // On rafraîchit le cooldown de ramassage (déjà mis au join, mais par sécurité)
+            ajouterCooldownRamassageRelique(uuid, 10000);
             teamManager.mettreAJourJoueur(joueur);
             
             joueur.sendMessage(OpsOrbis.get().getLangManager().get("player_reconnect_success"));
             scoreboardHUD.afficher(joueur);
             
-            // On lui redonne son équipement de kit car il revient de déconnexion
-            if (kitManager != null) {
+            // Nettoyage de l'inventaire avant de redonner le kit (évite les reliques fantômes)
+            joueur.getInventory().clear();
+            
+            // Si la partie est active, on lui redonne son kit
+            if (etatActuel == GameState.EN_COURS && kitManager != null) {
                 kitManager.donnerEquipement(joueur);
             }
-        } else {
-            // Reconnexion tardive : on lui rend son inventaire de base
+            return;
+        }
+
+        // 3. Si le joueur n'est plus dans une équipe (délais expiré) ou si la partie est terminée,
+        // on lui rend ses affaires.
+        if (etatActuel != GameState.EN_COURS || !disconnectionTimes.containsKey(uuid)) {
             playerStateManager.restoreState(joueur);
             disconnectionTimes.remove(uuid);
-            reconnectionTimes.put(uuid, connectionTime);
-            teamManager.retirerJoueur(joueur);
-            joueur.sendMessage(OpsOrbis.get().getLangManager().get("player_grace_expired"));
+            ajouterCooldownRamassageRelique(uuid, 10000);
+            
+            // Sécurité : clean du terrain quand un joueur revient si pas de match
+            if (etatActuel == GameState.ATTENTE) {
+                if (npcManager != null) npcManager.supprimerPNJ(null);
+                if (relicManager != null) relicManager.supprimerReliques(null);
+            }
+            return;
         }
+
+        // 4. Si la partie est en cours et qu'il a dépassé le délai de grâce (cas théorique car isJoueurDansMatch aurait dû être faux)
+        playerStateManager.restoreState(joueur);
+        disconnectionTimes.remove(uuid);
+        relicPickupCooldowns.put(uuid, System.currentTimeMillis() + 10000);
+        teamManager.retirerJoueur(joueur);
+        joueur.sendMessage(OpsOrbis.get().getLangManager().get("player_grace_expired"));
     }
 
     /**
      * Retire un joueur de la partie à partir de sa référence (utile pour la déconnexion).
      */
-    public void retirerJoueurParRef(PlayerRef ref) {
+    public void retirerJoueurParRef(PlayerRef ref, Vector3d positionDerniereConnaissance) {
         if (ref == null) return;
         
         UUID uuid = ref.getUuid();
         Player joueur = teamManager.getJoueurParRef(ref);
         
-        // Faire tomber la relique si le joueur en porte une
+        // Faire tomber la relique si le joueur en porte une (avec position explicite capturée à la déco)
+        reconnectionTimes.remove(uuid); 
+        relicPickupCooldowns.remove(uuid); // Permet de se reconnecter une N-ième fois
         if (etatActuel == GameState.EN_COURS && relicManager != null) {
-            relicManager.dropReliqueSiPorteur(joueur);
+            relicManager.dropReliqueSiPorteurParUuid(uuid, joueur, positionDerniereConnaissance);
         }
 
         // Au lieu de restaurer immédiatement, on enregistre l'heure de déconnexion
@@ -478,6 +505,9 @@ public class GameManager {
      */
     public void retirerJoueurDuMatch(Player joueur) {
         if (joueur == null) return;
+        
+        // Drop de relique immédiat
+        if (relicManager != null) relicManager.dropReliqueSiPorteur(joueur, null);
         
         // 1. Restaurer l'état (si sauvegardé)
         if (playerStateManager.hasSavedState(joueur)) {
@@ -508,31 +538,32 @@ public class GameManager {
     }
 
     public void diffuserMessage(World monde, Message message) {
-        HytaleUtils.diffuserMessage(monde, message);
+        HytaleUtils.diffuserMessageFiltre(monde, p -> teamManager.getCamp(p) != PlayerCamp.AUCUN, message);
     }
 
     /**
      * Diffuse une annonce visuelle au centre de l'écran à tous les joueurs.
      */
     public void diffuserAnnonce(World monde, Message titre, Message sousTitre) {
-        HytaleUtils.diffuserAnnonce(monde, titre, sousTitre);
+        HytaleUtils.diffuserAnnonceFiltree(monde, p -> teamManager.getCamp(p) != PlayerCamp.AUCUN, titre, sousTitre);
     }
 
     /**
      * Diffuse une annonce visuelle avec des durées de fondu personnalisées.
      */
     public void diffuserAnnonceRapide(World monde, Message titre, Message sousTitre, float dureeMaintien, float dureeApparition, float dureeDisparition) {
-        HytaleUtils.diffuserAnnonceFiltree(monde, p -> true, titre, sousTitre, dureeMaintien, dureeApparition, dureeDisparition);
+        HytaleUtils.diffuserAnnonceFiltree(monde, p -> teamManager.getCamp(p) != PlayerCamp.AUCUN, titre, sousTitre, dureeMaintien, dureeApparition, dureeDisparition);
     }
 
     /**
-     * Diffuse une annonce visuelle uniquement à une équipe spécifique.
+     * Diffuse une annonce visuelle uniquement à un camp spécifique.
      */
-    public void diffuserAnnonceEquipe(World monde, String role, Message titre, Message sousTitre) {
-        HytaleUtils.diffuserAnnonceFiltree(monde, p -> teamManager.getRole(p).equals(role), titre, sousTitre);
+    public void diffuserAnnonceEquipe(World monde, PlayerCamp camp, Message titre, Message sousTitre) {
+        HytaleUtils.diffuserAnnonceFiltree(monde, p -> teamManager.getCamp(p) == camp, titre, sousTitre);
     }
 
     public long getTempsRestantManche() { return tempsRestantManche; }
+    public StatsManager getStatsManager() { return statsManager; }
     public int getRoundActuel() { return roundActuel; }
     public GameState getEtatActuel() { return etatActuel; }
     public TeamManager getTeamManager() { return teamManager; }
@@ -542,11 +573,26 @@ public class GameManager {
     public RelicManager getRelicManager() { return relicManager; }
     public ScoreboardHUD getScoreboardHUD() { return scoreboardHUD; }
     public PlayerStateManager getPlayerStateManager() { return playerStateManager; }
+    
+    /**
+     * Ajoute ou rafraîchit un cooldown de ramassage de relique pour un joueur.
+     */
+    public void ajouterCooldownRamassageRelique(UUID uuid, long dureeMillis) {
+        if (uuid == null) return;
+        relicPickupCooldowns.put(uuid, System.currentTimeMillis() + dureeMillis);
+    }
 
     /**
-     * Retourne le moment de la dernière reconnexion physique du joueur.
+     * Vérifie si le joueur est actuellement sous cooldown de ramassage de relique.
      */
-    public long getReconnectionTime(UUID uuid) {
-        return reconnectionTimes.getOrDefault(uuid, 0L);
+    public boolean estBloqueRamassageRelique(UUID uuid) {
+        Long expiration = relicPickupCooldowns.get(uuid);
+        if (expiration == null) return false;
+        
+        if (System.currentTimeMillis() > expiration) {
+            relicPickupCooldowns.remove(uuid);
+            return false;
+        }
+        return true;
     }
 }

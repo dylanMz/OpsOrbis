@@ -12,9 +12,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.npc.entities.NPCEntity;
 import com.hypixel.hytale.server.core.modules.entity.damage.DamageModule;
 import com.opsorbis.game.logic.GameManager;
-import com.opsorbis.game.logic.NPCManager;
-import com.opsorbis.game.logic.TeamAttitudeProvider;
-import com.opsorbis.game.logic.PlayerRole;
+import com.opsorbis.game.logic.PlayerCamp;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Archetype;
 
@@ -64,7 +62,7 @@ public class FriendlyFireSystem extends DamageEventSystem {
                                      gameManager.getNpcManager().estPnjRouge(victimRef);
                 
                 // Si la victime est un de nos PNJ et l'attaquant est un défenseur, on bloque
-                if (isVictimNPC && gameManager.getTeamManager().getRole(attackerPlayer) == PlayerRole.DEFENSEUR) {
+                if (isVictimNPC && gameManager.getTeamManager().getCamp(attackerPlayer) == PlayerCamp.DEFENSEUR) {
                     event.setCancelled(true);
                     event.setAmount(0);
                     event.putMetaObject(Damage.BLOCKED, true);

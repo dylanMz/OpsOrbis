@@ -16,6 +16,8 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.Archetype;
 import com.hypixel.hytale.server.core.modules.entity.damage.DeathComponent;
 import com.hypixel.hytale.component.system.tick.ArchetypeTickingSystem;
+import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
+
 import java.util.UUID;
 
 /**
@@ -42,12 +44,12 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
     public Query<EntityStore> getQuery() { return query; }
 
     @Override
-    public boolean test(com.hypixel.hytale.component.ComponentRegistry<EntityStore> registry, Archetype<EntityStore> archetype) {
+    public boolean test(@NonNullDecl com.hypixel.hytale.component.ComponentRegistry<EntityStore> registry, Archetype<EntityStore> archetype) {
         return archetype.contains(Player.getComponentType()) && archetype.contains(TransformComponent.getComponentType());
     }
 
     @Override
-    public void tick(float delta, ArchetypeChunk<EntityStore> chunk, Store<EntityStore> store, CommandBuffer<EntityStore> buffer) {
+    public void tick(float delta, @NonNullDecl ArchetypeChunk<EntityStore> chunk, @NonNullDecl Store<EntityStore> store, @NonNullDecl CommandBuffer<EntityStore> buffer) {
         if (gameManager == null || gameManager.getEtatActuel() != GameManager.GameState.EN_COURS) return;
         RelicManager rm = gameManager.getRelicManager();
         if (rm == null) return;
@@ -64,7 +66,7 @@ public class RelicPickupSystem extends ArchetypeTickingSystem<EntityStore> {
 
             // --- NOUVEAU : Cooldown de 10s après reconnexion ---
             UUID uuid = HytaleUtils.getPlayerUuid(joueur);
-            if (System.currentTimeMillis() - gameManager.getReconnectionTime(uuid) < 10000) {
+            if (gameManager.estBloqueRamassageRelique(uuid)) {
                 continue;
             }
             // ---------------------------------------------------

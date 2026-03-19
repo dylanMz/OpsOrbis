@@ -94,8 +94,8 @@ public class LangManager {
                 "  \"match_start_title\": \"&eDémarrage de la Manche {round} !\",\n" +
                 "  \"match_start_chat\": \"&e[Phase] Démarrage de la Manche {round} !\",\n" +
                 "  \"round_start_chat\": \"&aLa manche commence ! Attaquants, volez les reliques !\",\n" +
-                "  \"team_assign_attacker\": \"&fVous êtes &6Attaquant &f! Volez les 2 reliques des défenseurs.\",\n" +
-                "  \"team_assign_defender\": \"&fVous êtes &2Défenseur &f! Protégez vos reliques.\",\n" +
+                "  \"team_assign_attacker\": \"&fVous rejoignez le camp des &6Attaquants &f! Volez les 2 reliques des défenseurs.\",\n" +
+                "  \"team_assign_defender\": \"&fVous rejoignez le camp des &2Défenseurs &f! Protégez vos reliques.\",\n" +
                 "  \"kit_selected\": \"&fVous avez sélectionné le kit &6{kit}\",\n" +
                 "  \"kit_distributed\": \"&aVotre équipement a été distribué !\",\n" +
                 "  \"kit_help_available\": \"&7Kits disponibles : &6{kits}\",\n" +
@@ -117,7 +117,7 @@ public class LangManager {
                 "  \"match_start_cancelled\": \"&c[Ops Orbis] Plus aucun joueur, démarrage annulé.\",\n" +
                 "  \"match_stopped_admin\": \"&c=== LA PARTIE A ÉTÉ ARRÊTÉE PAR UN ADMIN ===\",\n" +
                 "  \"match_time_up\": \"&c[Temps] LE TEMPS EST ÉCOULÉ !\",\n" +
-                "  \"half_time_swap\": \"&b[Changement] MI-TEMPS ! Changement de rôles !\",\n" +
+                "  \"half_time_swap\": \"&b[Changement] MI-TEMPS ! Changement de camps !\",\n" +
                 "  \"match_over_winner\": \"&eMatch terminé ! Les &l{team} &agagnent !\",\n" +
                 "  \"match_over_header\": \"&6=== LE MATCH EST TERMINÉ ===\\n\",\n" +
                 "  \"match_over_scores\": \"&fScores - Eq1: {score1} | Eq2: {score2}\\n\",\n" +
@@ -139,18 +139,23 @@ public class LangManager {
                 "  \"scoreboard_time\": \" &7| Tps: {time}\",\n" +
                 "  \"scoreboard_team1\": \"&bÉquipe 1: &f{score1}\",\n" +
                 "  \"scoreboard_team2\": \" &7| &cÉquipe 2: &f{score2}\",\n" +
+                "  \"scoreboard_player_role\": \"&7Camp: &e{camp}\",\n  \"scoreboard_team_label\": \"&5({team})\",\n" +
+                "  \"team_1_name\": \"Équipe 1\",\n" +
+                "  \"team_2_name\": \"Équipe 2\",\n" +
                 "  \"scoreboard_relics\": \"&7Reliques: &6{count}/2 capturées\",\n" +
                 "  \"scoreboard_relic_status\": \"&7Relique {number}: {status}\",\n" +
                 "  \"relic_status_at_base\": \"Base\",\n" +
                 "  \"relic_status_carried\": \"Portée\",\n" +
                 "  \"relic_status_dropped\": \"Au sol\",\n" +
                 "  \"relic_status_captured\": \"Capturée\",\n" +
-                "  \"team_1_name\": \"Équipe 1\",\n" +
-                "  \"team_2_name\": \"Équipe 2\",\n" +
+                "  \"round_winner_chat\": \"&6[Manche] La manche {round} a été remportée par les &l{camp}&r !\",\n" +
+                "  \"round_winner_title\": \"&6&lVICTOIRE DES {camp}\",\n" +
+                "  \"round_winner_subtitle\": \"&fManche {round} terminée\",\n" +
                 "  \"match_draw\": \"Égalité !\",\n" +
-                "  \"role_attaquant\": \"Attaquant\",\n" +
-                "  \"role_defenseur\": \"Défenseur\",\n" +
-                "  \"role_none\": \"Spectateur\",\n" +
+                "  \"camp_attaquant\": \"Attaquants\",\n" +
+                "  \"camp_defenseur\": \"Défenseurs\",\n" +
+                "  \"camp_spectateur\": \"Spectateur\",\n" +
+                "  \"camp_none\": \"Spectateur\",\n" +
                 "  \"team_1_attacking\": \"ÉQUIPE 1 : ATTAQUE\",\n" +
                 "  \"team_1_defending\": \"ÉQUIPE 1 : DÉFENSE\",\n" +
                 "  \"cmd_config_help_header\": \"&6Config — sous-commandes :\",\n" +
@@ -169,7 +174,18 @@ public class LangManager {
                 "  \"cmd_config_npc_success\": \"&a✓ Spawn PNJ {number} défini.\",\n" +
                 "  \"cmd_config_deposit_success\": \"&a✓ Zone de dépôt Attaquants définie.\",\n" +
                 "  \"cmd_role_required\": \"&cVous devez d'abord rejoindre la partie avec /oorbis join\",\n" +
-                "  \"cmd_reload_success\": \"&a✓ Plugin rechargé avec succès !\"\n" +
+                "  \"cmd_reload_success\": \"&a✓ Plugin rechargé avec succès !\",\n" +
+                "  \"summary_victory_title\": \"&6&lVICTOIRE DES {camp}\",\n" +
+                "  \"summary_mvp_label\": \"&e--- MVP DU MATCH ---\",\n" +
+                "  \"summary_mvp_score\": \"&7Score de performance : &b{score}\",\n" +
+                "  \"summary_personal_title\": \"&f&nTES STATISTIQUES&r\",\n" +
+                "  \"summary_stat_kills_label\": \"Éliminations\",\n" +
+                "  \"summary_stat_deaths_label\": \"Morts\",\n" +
+                "  \"summary_stat_steals_label\": \"Vols de Reliques\",\n" +
+                "  \"summary_stat_captures_label\": \"Captures\",\n" +
+                "  \"summary_stat_returns_label\": \"Retours Base\",\n" +
+                "  \"summary_performance_label\": \"SCORE TOTAL\",\n" +
+                "  \"summary_close\": \"&7[Appuyez sur Échap pour quitter]\"\n" +
                 "}";
     }
 
@@ -202,7 +218,7 @@ public class LangManager {
                 "  \"match_start_cancelled\": \"&c[Ops Orbis] No more players, start cancelled.\",\n" +
                 "  \"match_stopped_admin\": \"&c=== THE GAME HAS BEEN STOPPED BY AN ADMIN ===\",\n" +
                 "  \"match_time_up\": \"&c[Time] TIME IS UP!\",\n" +
-                "  \"half_time_swap\": \"&b[Change] HALF-TIME! Swapping roles!\",\n" +
+                "  \"half_time_swap\": \"&b[Change] HALF-TIME! Swapping camps!\",\n" +
                 "  \"match_over_winner\": \"&eMatch over! The &l{team} &awin!\",\n" +
                 "  \"match_over_header\": \"&6=== GAME OVER ===\\n\",\n" +
                 "  \"match_over_scores\": \"&fScores - Eq1: {score1} | Eq2: {score2}\\n\",\n" +
@@ -232,10 +248,16 @@ public class LangManager {
                 "  \"relic_status_captured\": \"Captured\",\n" +
                 "  \"team_1_name\": \"Team 1\",\n" +
                 "  \"team_2_name\": \"Team 2\",\n" +
+                "  \"round_winner_chat\": \"&6[Round] Round {round} won by &l{camp}&r!\",\n" +
+                "  \"round_winner_title\": \"&6ROUND {round} OVER\",\n" +
+                "  \"round_winner_subtitle\": \"&fVictory for &l{camp}\",\n" +
                 "  \"match_draw\": \"Draw!\",\n" +
-                "  \"role_attaquant\": \"Attacker\",\n" +
-                "  \"role_defenseur\": \"Defender\",\n" +
-                "  \"role_none\": \"Spectator\",\n" +
+                "  \"scoreboard_player_role\": \"&7Camp: &e{camp}\",\n" +
+                "  \"scoreboard_team_label\": \"&5({team})\",\n" +
+                "  \"camp_attaquant\": \"Attacker\",\n" +
+                "  \"camp_defenseur\": \"Defender\",\n" +
+                "  \"camp_spectateur\": \"Spectator\",\n" +
+                "  \"camp_none\": \"Spectator\",\n" +
                 "  \"team_1_attacking\": \"TEAM 1: ATTACK\",\n" +
                 "  \"team_1_defending\": \"TEAM 1: DEFENSE\",\n" +
                 "  \"cmd_config_help_header\": \"&6Config — sub-commands:\",\n" +
@@ -254,7 +276,18 @@ public class LangManager {
                 "  \"cmd_config_npc_success\": \"&a✓ NPC Spawn {number} defined.\",\n" +
                 "  \"cmd_config_deposit_success\": \"&a✓ Attacker Deposit Zone defined.\",\n" +
                 "  \"cmd_role_required\": \"&cYou must join the match first with /oorbis join\",\n" +
-                "  \"cmd_reload_success\": \"&a✓ Plugin reloaded successfully!\"\n" +
+                "  \"cmd_reload_success\": \"&a✓ Plugin reloaded successfully!\",\n" +
+                "  \"summary_victory_title\": \"&6&l{camp} WIN\",\n" +
+                "  \"summary_mvp_label\": \"&e--- MATCH MVP ---\",\n" +
+                "  \"summary_mvp_score\": \"&7Performance Score: &b{score}\",\n" +
+                "  \"summary_personal_title\": \"&f&nYOUR STATISTICS&r\",\n" +
+                "  \"summary_stat_kills_label\": \"Kills\",\n" +
+                "  \"summary_stat_deaths_label\": \"Deaths\",\n" +
+                "  \"summary_stat_steals_label\": \"Relic Steals\",\n" +
+                "  \"summary_stat_captures_label\": \"Captures\",\n" +
+                "  \"summary_stat_returns_label\": \"Base Returns\",\n" +
+                "  \"summary_performance_label\": \"TOTAL SCORE\",\n" +
+                "  \"summary_close\": \"&7[Press Escape to quit]\"\n" +
                 "}";
     }
 

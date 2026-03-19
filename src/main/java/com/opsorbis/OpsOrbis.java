@@ -9,6 +9,7 @@ import com.opsorbis.game.systems.RelicPickupSystem;
 import com.opsorbis.game.systems.RelicDepositSystem;
 import com.opsorbis.game.systems.RelicDeathSystem;
 import com.opsorbis.game.systems.PlayerRespawnSystem;
+import com.opsorbis.game.systems.KillTrackingSystem;
 import com.opsorbis.utils.HytaleUtils;
 import com.opsorbis.commands.GameCommand;
 import com.opsorbis.commands.LobbyCommand;
@@ -19,12 +20,14 @@ import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.vector.Vector3d;
 import java.util.logging.Level;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.Arrays;
-import java.lang.reflect.Method;
 
 /**
  * Classe principale du mod Ops Orbis.
@@ -71,14 +74,20 @@ public class OpsOrbis extends JavaPlugin {
         getEntityStoreRegistry().registerSystem(new RelicDepositSystem(gameManager));
         getEntityStoreRegistry().registerSystem(new RelicDeathSystem(gameManager));
         getEntityStoreRegistry().registerSystem(new PlayerRespawnSystem(gameManager));
+        getEntityStoreRegistry().registerSystem(new KillTrackingSystem(gameManager));
 
         // 5. Enregistrement des évènements (Scoreboard auto-show/hide & Reconnexion)
         getEventRegistry().register(PlayerConnectEvent.class, event -> {
             PlayerRef ref = event.getPlayerRef();
             if (ref != null) {
+                // --- NOUVEAU : On bloque le ramassage IMMEDIATEMENT au join ---
+                gameManager.ajouterCooldownRamassageRelique(ref.getUuid(), 10000);
+                // ------------------------------------------------------------
+
                 long connectionTime = System.currentTimeMillis();
+                
+                // On tente une reconnexion immédiate ET une retardée pour pallier les délais de join d'Hytale
                 scheduler.schedule(() -> {
-                    // On itère sur les mondes et on execute sur chacun pour trouver le joueur
                     for (World monde : com.hypixel.hytale.server.core.universe.Universe.get().getWorlds().values()) {
                         monde.execute(() -> {
                             Player joueur = HytaleUtils.getPlayerFromRef(ref, monde);
@@ -87,18 +96,46 @@ public class OpsOrbis extends JavaPlugin {
                             }
                         });
                     }
-                }, 2, TimeUnit.SECONDS);
+                }, 1, TimeUnit.SECONDS);
+
+                scheduler.schedule(() -> {
+                    for (World monde : com.hypixel.hytale.server.core.universe.Universe.get().getWorlds().values()) {
+                        monde.execute(() -> {
+                            Player joueur = HytaleUtils.getPlayerFromRef(ref, monde);
+                            if (joueur != null) {
+                                gameManager.gererReconnexion(joueur, connectionTime);
+                            }
+                        });
+                    }
+                }, 3, TimeUnit.SECONDS);
             }
         });
 
         getEventRegistry().register(PlayerDisconnectEvent.class, event -> {
             PlayerRef ref = event.getPlayerRef();
             if (ref != null) {
-                // Pour la déconnexion, on peut utiliser n'importe quel monde pour appeler le gestionnaire,
-                // car le retrait du cache TeamManager et disconnectionTimes est thread-safe.
+                // On essaie de récupérer le monde "default" pour l'exécution
                 World monde = com.hypixel.hytale.server.core.universe.Universe.get().getWorld("default");
+                
                 if (monde != null) {
-                    monde.execute(() -> gameManager.retirerJoueurParRef(ref));
+                    try {
+                        monde.execute(() -> {
+                            // ON CAPTURE LA POSITION ICI (SYNCHRONE SUR LE THREAD DU MONDE)
+                            final Vector3d positionDeco;
+                            Player joueur = gameManager.getTeamManager().getJoueurParRef(ref);
+                            if (joueur != null && joueur.getWorld() != null) {
+                                Store<EntityStore> store = joueur.getWorld().getEntityStore().getStore();
+                                TransformComponent tc = store.getComponent(joueur.getReference(), TransformComponent.getComponentType());
+                                positionDeco = (tc != null) ? tc.getPosition().clone() : null;
+                            } else {
+                                positionDeco = null;
+                            }
+                            
+                            gameManager.retirerJoueurParRef(ref, positionDeco);
+                        });
+                    } catch (Exception e) {
+                        // Ignored: world probably shutting down
+                    }
                 }
             }
         });
