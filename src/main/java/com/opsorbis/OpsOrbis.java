@@ -12,7 +12,6 @@ import com.opsorbis.game.systems.PlayerRespawnSystem;
 import com.opsorbis.utils.HytaleUtils;
 import com.opsorbis.commands.GameCommand;
 import com.opsorbis.commands.LobbyCommand;
-import com.opsorbis.game.ui.LobbyUIManager;
 import com.opsorbis.config.ConfigManager;
 import com.opsorbis.config.LangManager;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -36,7 +35,6 @@ public class OpsOrbis extends JavaPlugin {
     private GameManager gameManager;
     private ConfigManager configManager;
     private LangManager langManager;
-    private LobbyUIManager lobbyUIManager;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     public OpsOrbis(JavaPluginInit init) {
@@ -62,12 +60,9 @@ public class OpsOrbis extends JavaPlugin {
         // 3. Enregistrement des placeholders globaux
         registerPlaceholders();
 
-        // 3b. Initialisation du gestionnaire de lobby UI
-        this.lobbyUIManager = new LobbyUIManager();
-
         // 4. Enregistrement des commandes
         getCommandRegistry().registerCommand(new GameCommand(gameManager));
-        getCommandRegistry().registerCommand(new LobbyCommand(lobbyUIManager));
+        getCommandRegistry().registerCommand(new LobbyCommand("lobby", "Ouvre la liste des parties"));
 
         // 4. Enregistrement des systèmes ECS (Dommages, Pickups, Dépôts)
         getEntityStoreRegistry().registerSystem(new FriendlyFireSystem(gameManager));
@@ -169,9 +164,7 @@ public class OpsOrbis extends JavaPlugin {
         return langManager;
     }
 
-    public LobbyUIManager getLobbyUIManager() {
-        return lobbyUIManager;
-    }
+
 
     private void registerPlaceholders() {
         if (langManager == null || gameManager == null) return;

@@ -1,99 +1,132 @@
+$Common = "Common.ui";
+
 @bg = PatchStyle(TexturePath: "bg.png");
 
-Group #MainGroup {
-    Anchor: (Top: 100, Left: 200, Width: 600, Height: 400);
-    Background: @bg;
+Group {
+    LayoutMode: Center;
 
-    Label #Titre {
-        Text: "EXPERIENCE MOD";
-        Anchor: (Top: 15, Left: 200);
-    }
-
-    Label #SousTitre {
-        Text: "Liste des parties";
-        Anchor: (Top: 45, Left: 220);
-    }
-
-    // ── Partie 1 ──────────────────────────────────────
-    Group #Partie1 {
-        Anchor: (Top: 80, Left: 20, Width: 560, Height: 70);
+    Group #MainPanel {
         Background: @bg;
+        Anchor: (Width: 700, Height: 450);
+        LayoutMode: Top;
 
-        Label #NomPartie1 {
-            Text: "Partie 1";
-            Anchor: (Top: 25, Left: 15);
+        Label #Titre {
+            Style: (FontSize: 32, Alignment: Center);
+            Anchor: (Top: 20);
+            Text: "EXPERIENCE MOD";
+            Padding: (Full: 10);
         }
 
-        Label #Joueurs1 {
-            Text: "0/10";
-            Anchor: (Top: 25, Left: 200);
+        Label #SousTitre {
+            Style: (FontSize: 18, Alignment: Center);
+            Anchor: (Top: 5);
+            Text: "Liste des parties";
+            Padding: (Full: 5);
         }
 
-        Label #Statut1 {
-            Text: "En attente";
-            Anchor: (Top: 25, Left: 310);
+        // ── Partie 1 ──────────────────────────────
+        Group #Partie1 {
+            Background: @bg;
+            Anchor: (Top: 15, Width: 650, Height: 70);
+            LayoutMode: Left;
+
+            Label #NomPartie1 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 200, Height: 70);
+                Text: "Partie 1";
+                Padding: (Left: 20, Top: 25);
+            }
+
+            Label #Joueurs1 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 100, Height: 70);
+                Text: "0/10";
+                Padding: (Top: 25);
+            }
+
+            Label #Statut1 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 180, Height: 70);
+                Text: "En attente";
+                Padding: (Top: 25);
+            }
+
+            Label #Rejoindre1 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 150, Height: 70);
+                Text: "[Rejoindre]";
+                Padding: (Top: 25);
+            }
         }
 
-        Label #Rejoindre1 {
-            Text: "[Rejoindre]";
-            Anchor: (Top: 25, Left: 440);
-        }
-    }
+        // ── Partie 2 ──────────────────────────────
+        Group #Partie2 {
+            Background: @bg;
+            Anchor: (Top: 10, Width: 650, Height: 70);
+            LayoutMode: Left;
 
-    // ── Partie 2 ──────────────────────────────────────
-    Group #Partie2 {
-        Anchor: (Top: 160, Left: 20, Width: 560, Height: 70);
-        Background: @bg;
+            Label #NomPartie2 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 200, Height: 70);
+                Text: "Partie 2";
+                Padding: (Left: 20, Top: 25);
+            }
 
-        Label #NomPartie2 {
-            Text: "Partie 2";
-            Anchor: (Top: 25, Left: 15);
-        }
+            Label #Joueurs2 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 100, Height: 70);
+                Text: "0/10";
+                Padding: (Top: 25);
+            }
 
-        Label #Joueurs2 {
-            Text: "0/10";
-            Anchor: (Top: 25, Left: 200);
-        }
+            Label #Statut2 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 180, Height: 70);
+                Text: "En cours";
+                Padding: (Top: 25);
+            }
 
-        Label #Statut2 {
-            Text: "En attente";
-            Anchor: (Top: 25, Left: 310);
-        }
-
-        Label #Rejoindre2 {
-            Text: "[Rejoindre]";
-            Anchor: (Top: 25, Left: 440);
-        }
-    }
-
-    // ── Partie 3 ──────────────────────────────────────
-    Group #Partie3 {
-        Anchor: (Top: 240, Left: 20, Width: 560, Height: 70);
-        Background: @bg;
-
-        Label #NomPartie3 {
-            Text: "Partie 3";
-            Anchor: (Top: 25, Left: 15);
+            Label #Rejoindre2 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 150, Height: 70);
+                Text: "";
+                Padding: (Top: 25);
+            }
         }
 
-        Label #Joueurs3 {
-            Text: "0/10";
-            Anchor: (Top: 25, Left: 200);
-        }
+        // ── Partie 3 ──────────────────────────────
+        Group #Partie3 {
+            Background: @bg;
+            Anchor: (Top: 10, Width: 650, Height: 70);
+            LayoutMode: Left;
 
-        Label #Statut3 {
-            Text: "En attente";
-            Anchor: (Top: 25, Left: 310);
-        }
+            Label #NomPartie3 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 200, Height: 70);
+                Text: "Partie 3";
+                Padding: (Left: 20, Top: 25);
+            }
 
-        Label #Rejoindre3 {
-            Text: "[Rejoindre]";
-            Anchor: (Top: 25, Left: 440);
-        }
-    }
+            Label #Joueurs3 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 100, Height: 70);
+                Text: "0/10";
+                Padding: (Top: 25);
+            }
 
-    Label #Fermer {
-        Text: "[Fermer]";
-        Anchor: (Top: 340, Left: 260);
+            Label #Statut3 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 180, Height: 70);
+                Text: "En attente";
+                Padding: (Top: 25);
+            }
+
+            Label #Rejoindre3 {
+                Style: (FontSize: 16);
+                Anchor: (Width: 150, Height: 70);
+                Text: "[Rejoindre]";
+                Padding: (Top: 25);
+            }
+        }
     }
 }
